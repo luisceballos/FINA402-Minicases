@@ -498,21 +498,64 @@ const _sec  = parseInt(_params.get('seccion') || '0');
 const _grp  = parseInt(_params.get('grupo')   || '1');
 let gNum = _grp;
 
+// ── ACCESS WALLS ──
+function showAccessWall(reason){
+  document.querySelector('main').innerHTML=`
+    <div style="max-width:520px;margin:80px auto;text-align:center;padding:0 20px;">
+      <div style="font-size:56px;margin-bottom:16px;">🔒</div>
+      <h2 style="font-size:22px;color:#002147;margin-bottom:14px;">Access Restricted</h2>
+      <p style="font-size:15px;color:#6b7280;line-height:1.7;margin-bottom:28px;">
+        ${reason==='inactive'
+          ? 'This minicase is <strong>not currently available</strong>.<br>Please check with your professor.'
+          : 'This minicase must be accessed through the<br><strong>FINA 402 Minicase Hub</strong>.<br>Direct access is not allowed.'}
+      </p>
+      <a href="minicase-hub.html" style="display:inline-block;background:#002147;color:#fff;padding:13px 30px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;">← Go to Minicase Hub</a>
+    </div>`;
+}
+
+function showSubmittedWall(d){
+  const at=d.submittedAt?new Date(d.submittedAt).toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'—';
+  const team=(d.team||[]).filter(Boolean).join(', ');
+  document.querySelector('main').innerHTML=`
+    <div style="max-width:520px;margin:80px auto;text-align:center;padding:0 20px;">
+      <div style="font-size:56px;margin-bottom:16px;">✅</div>
+      <h2 style="font-size:22px;color:#002147;margin-bottom:14px;">Already Submitted</h2>
+      <p style="font-size:15px;color:#374151;line-height:1.6;margin-bottom:10px;">
+        <strong>Section ${_sec}, Group ${_grp}</strong> has already submitted this minicase.
+      </p>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:${team?'10px':'22px'};">Submitted on: <strong>${at}</strong></p>
+      ${team?`<p style="font-size:13px;color:#6b7280;margin-bottom:22px;">Team: ${team}</p>`:''}
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px 16px;color:#78350f;font-size:13px;line-height:1.6;margin-bottom:28px;">
+        If you believe this is an error or need to resubmit,<br>please contact your professor.
+      </div>
+      <a href="minicase-hub.html" style="display:inline-block;background:#002147;color:#fff;padding:13px 30px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;">← Back to Minicase Hub</a>
+    </div>`;
+}
+
 async function resolveGroupAndStart() {
-  if (_sec > 0) {
-    try {
-      const snap = await firebase.firestore().collection('minicase_hub').doc('config').get();
-      if (snap.exists) {
-        const secs = snap.data().minicases[0].sections || [];
-        let offset = 0;
-        for (let s = 0; s < _sec - 1 && s < secs.length; s++) offset += (secs[s].groups || 5);
-        gNum = ((offset + _grp - 1) % GROUPS.length) + 1;
-      } else { gNum = ((_sec-1)*5 + _grp - 1) % GROUPS.length + 1; }
-    } catch(e) { gNum = ((_sec-1)*5 + _grp - 1) % GROUPS.length + 1; }
+  // Gate 1: must arrive with section & group params (set by hub link)
+  if (_sec <= 0 || _grp <= 0) {
+    showAccessWall('no_params');
+    return;
   }
+  try {
+    const snap = await firebase.firestore().collection('minicase_hub').doc('config').get();
+    if (snap.exists) {
+      const mcCfg = (snap.data().minicases||[])[0]||{};
+      // Gate 2: minicase must be active in hub
+      if (!mcCfg.active) {
+        showAccessWall('inactive');
+        return;
+      }
+      const secs = mcCfg.sections || [];
+      let offset = 0;
+      for (let s = 0; s < _sec - 1 && s < secs.length; s++) offset += (secs[s].groups || 5);
+      gNum = ((offset + _grp - 1) % GROUPS.length) + 1;
+    } else { gNum = ((_sec-1)*5 + _grp - 1) % GROUPS.length + 1; }
+  } catch(e) { gNum = ((_sec-1)*5 + _grp - 1) % GROUPS.length + 1; }
   G = GROUPS.find(g => g.grupo === gNum);
   A = ANSWERS.find(a => a.grupo === gNum);
-  // Check existing submission & professor's resubmit setting
+  // Gate 3: check existing submission
   try {
     const docId = `mc1_sec${_sec}_grp${_grp}`;
     const existSnap = await firebase.firestore().collection('minicase_submissions').doc(docId).get();
@@ -527,12 +570,11 @@ async function resolveGroupAndStart() {
         }
       } catch(e2){}
       if(!allowResubmit){
-        _resubmitBlocked = true;
-        const banner = document.getElementById('alreadySubmittedBanner');
-        if(banner) banner.style.display = 'block';
-        const sbtn = document.getElementById('submitBtn');
-        if(sbtn){ sbtn.disabled = true; sbtn.textContent = 'Already Submitted'; }
+        // Gate 3 block: show wall instead of letting them in
+        showSubmittedWall(existSnap.data());
+        return;
       }
+      _resubmitBlocked = true;
     }
   } catch(e){}
   initApp();

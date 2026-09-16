@@ -256,6 +256,18 @@ input:checked+.tslider:before{transform:translateX(18px);}
         </div>
         <div id="sub-data"><div class="sub-empty">Select a minicase, section, and group above to load their submission.</div></div>
       </div>
+
+      <!-- ── ANSWER KEY PANEL ── -->
+      <div class="sub-panel" style="margin-top:16px;">
+        <h4>🔑 Section Answer Key</h4>
+        <div class="sub-picker">
+          <select id="ak-mc" onchange="akMcChanged()"><option value="">— Minicase —</option></select>
+          <select id="ak-sec" disabled><option value="">— Section —</option></select>
+          <button onclick="loadAnswerKey()">Show Key</button>
+        </div>
+        <div id="ak-data"><div class="sub-empty">Select a minicase and section to view the answer key for all groups.</div></div>
+      </div>
+
     </div>
     <div class="mfoot">
       <span class="save-msg" id="save-msg">✓ Saved!</span>
@@ -404,6 +416,7 @@ document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='E
 function openSettings(){
   renderSettings();
   populateSubPickers();
+  populateAkPickers();
   document.getElementById('st-overlay').classList.add('show');
 }
 function closeST(){document.getElementById('st-overlay').classList.remove('show');}
@@ -861,6 +874,110 @@ async function resetSubmission(docId){
 ['gs-overlay','pw-overlay','st-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
 });
+
+// ═══════════════════════════════════════════════════
+// ANSWER KEY VIEWER
+// ═══════════════════════════════════════════════════
+function populateAkPickers(){
+  const sel = document.getElementById('ak-mc');
+  sel.innerHTML = '<option value="">— Minicase —</option>';
+  (cfg.minicases||[]).forEach((mc,i)=>{
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = 'Minicase '+(i+1)+(mc.title?' – '+mc.title:'');
+    sel.appendChild(opt);
+  });
+  document.getElementById('ak-sec').innerHTML='<option value="">— Section —</option>';
+  document.getElementById('ak-sec').disabled=true;
+  document.getElementById('ak-data').innerHTML='<div class="sub-empty">Select a minicase and section to view the answer key for all groups.</div>';
+}
+
+function akMcChanged(){
+  const mcIdx = document.getElementById('ak-mc').value;
+  const secSel = document.getElementById('ak-sec');
+  secSel.innerHTML='<option value="">— Section —</option>';
+  if(mcIdx===''){secSel.disabled=true;return;}
+  const mc = cfg.minicases[parseInt(mcIdx)];
+  (mc.sections||[]).forEach((s,si)=>{
+    const opt=document.createElement('option');
+    opt.value=si+1;
+    opt.textContent=(s.name||'Section '+(si+1));
+    secSel.appendChild(opt);
+  });
+  secSel.disabled=false;
+}
+
+function getGNumForKey(mcIdx, secIdx0, grp){
+  const mc = cfg.minicases[mcIdx];
+  const secs = mc.sections||[];
+  let offset=0;
+  for(let s=0;s<secIdx0;s++) offset+=(secs[s].groups||5);
+  return ((offset+grp-1)%15)+1; // 15 answer sets in MC1_ANS
+}
+
+function loadAnswerKey(){
+  const mcIdxStr = document.getElementById('ak-mc').value;
+  const secStr   = document.getElementById('ak-sec').value;
+  const div      = document.getElementById('ak-data');
+  if(mcIdxStr===''||secStr===''){
+    div.innerHTML='<div class="sub-empty">Please select a minicase and section.</div>'; return;
+  }
+  const mcIdx  = parseInt(mcIdxStr);
+  const secNum = parseInt(secStr); // 1-based
+  if(mcIdx !== 0){
+    div.innerHTML='<div class="sub-empty">Answer key embedded only for Minicase 1.</div>'; return;
+  }
+  const mc       = cfg.minicases[mcIdx];
+  const secData  = (mc.sections||[])[secNum-1]||{};
+  const secLabel = secData.name||'Section '+secNum;
+  const numG     = secData.groups||5;
+  let rows='';
+  for(let g=1;g<=numG;g++){
+    const gn    = getGNumForKey(mcIdx, secNum-1, g);
+    const A     = MC1_ANS.find(a=>a.grupo===gn)||MC1_ANS[0];
+    const exp50 = pf5050(A.mu_vgt,A.mu_vht,A.s_vgt,A.s_vht,A.rho);
+    const expMV = findMVP(A.mu_vgt,A.mu_vht,A.s_vgt,A.s_vht,A.rho);
+    const q1exp = A.check_ret_vgt[1];
+    const even  = g%2===0;
+    rows+=`<tr style="background:${even?'#f9fafb':'#fff'};border-bottom:1px solid #e5e7eb;">
+      <td style="padding:6px 10px;font-weight:700;color:var(--navy);white-space:nowrap;">Group ${g}</td>
+      <td style="padding:6px 10px;font-size:.73rem;color:#9ca3af;white-space:nowrap;">gNum ${gn}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${(q1exp*100).toFixed(4)}%</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.mu_vgt)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.s_vgt)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.mu_vht)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.s_vht)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${numFmt(A.rho)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(exp50.ret)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(exp50.risk)}</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${(expMV.w*100).toFixed(1)}%</td>
+      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(expMV.risk)}</td>
+    </tr>`;
+  }
+  div.innerHTML=`
+  <div style="margin-top:6px;font-size:.78rem;color:var(--navy);font-weight:700;margin-bottom:6px;">
+    Minicase 1 – ${secLabel} – ${numG} group${numG>1?'s':''}
+  </div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.79rem;">
+      <thead><tr style="background:var(--navy);color:#fff;">
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Group</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">ID</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q1 Check Ret</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 μ VGT</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 σ VGT</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 μ VHT</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 σ VHT</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q3 ρ</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q4 Ret</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q4 Risk</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q5c Alloc</th>
+        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q5c Risk</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
 
 loadHub();
 </script>
