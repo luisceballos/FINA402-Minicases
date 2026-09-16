@@ -703,12 +703,12 @@ function renderSubmission(d, docId, mcNum, sec, grp){
   // ── SCORING ──
   function textScore(txt,full){const t=(txt||'').trim();if(!t.length)return 0;if(t.length<80)return full*0.5;return full;}
   // numOk: general relative tolerance (Q3, Q4, Q5c)
-  function numOk(studentStr,expected){const v=parseFloat(studentStr);if(isNaN(v))return false;return nearRel(v,expected,0.02);}
+  function numOk(studentStr,expected){const v=parseFloat(studentStr);if(isNaN(v))return false;return nearRel(v,expected,0.005);}
   function numSc(str,exp,pts){return numOk(str,exp)?pts:0;}
   // Q1: student enters as %, validation uses absolute tol 0.005 on decimal
-  function q1Ok(str){const v=parseFloat(str)/100;return !isNaN(v)&&Math.abs(v-q1_exp)<=0.005;}
+  function q1Ok(str){const v=parseFloat(str)/100;return !isNaN(v)&&Math.abs(v-q1_exp)<=0.001;}
   // Q2: student enters as % (e.g. "0.9033"), A.* are decimals (e.g. 0.009033) → divide by 100
-  function q2Ok(str,expDec){const v=parseFloat(str)/100;if(isNaN(v))return false;return nearRel(v,expDec,0.02);}
+  function q2Ok(str,expDec){const v=parseFloat(str)/100;if(isNaN(v))return false;return nearRel(v,expDec,0.005);}
   function q2Sc(str,expDec,pts){return q2Ok(str,expDec)?pts:0;}
 
   const q1_exp=A.check_ret_vgt[1]; // index 1 matches checkIdx=11 in minicase
@@ -719,7 +719,7 @@ function renderSubmission(d, docId, mcNum, sec, grp){
   const q5a_sc=textScore(q3d.a,1);
   const q5b_sc=textScore(q3d.b,.5);
   const mvpV  =parseFloat(q2d.mvpAlloc);
-  const q5c_a =(!isNaN(mvpV)&&nearRel(mvpV,expMVP.w*100,.05))?.25:0;
+  const q5c_a =(!isNaN(mvpV)&&nearRel(mvpV,expMVP.w*100,.02))?.25:0;
   const q5c_r =numSc(q2d.mvpRisk,expMVP.risk*100,.25);
   const q5c_sc=q5c_a+q5c_r;
   const q6d_sc=textScore(q3d.d,1);

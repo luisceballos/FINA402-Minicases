@@ -757,7 +757,7 @@ function validateStep1(){
   const val = parseFloat(document.getElementById('s1_input').value.trim()) / 100;
   const expected = A.check_ret_vgt[1]; // index 11
   if(isNaN(val)){ showFB('s1_fb',false,'Please enter a numeric value.'); return; }
-  const ok = near(val, expected, 0.005);
+  const ok = near(val, expected, 0.001);
   const inp = document.getElementById('s1_input');
   inp.className = 'num-input ' + (ok?'ok':'err');
   if(ok){
@@ -789,7 +789,7 @@ function validateStep2(){
   ];
   let allOk = true;
   checks.forEach(c=>{
-    const ok = nearRel(c.val, c.exp, 0.02);
+    const ok = nearRel(c.val, c.exp, 0.005);
     document.getElementById(c.id).className = 'num-input '+(ok?'ok':'err');
     if(!ok) allOk=false;
   });
@@ -807,7 +807,7 @@ function validateStep2(){
 function validateStep3(){
   const val = parseFloat(document.getElementById('s3_rho').value.trim());
   if(isNaN(val)){ showFB('s3_fb',false,'Please enter a numeric value.'); return; }
-  const ok = near(val, A.rho, 0.01);
+  const ok = near(val, A.rho, 0.003);
   document.getElementById('s3_rho').className = 'num-input '+(ok?'ok':'err');
   if(ok){
     s3ok=true; userRho=val;
@@ -843,8 +843,8 @@ function validateQ4(){
   const p      = pfStats(0.5, A.mu_vgt, A.mu_vht, A.s_vgt, A.s_vht, A.rho);
   const retPct  = p.ret  * 100;
   const riskPct = p.risk * 100;
-  const retOk   = nearRel(retVal,  retPct,  0.02);
-  const riskOk  = nearRel(riskVal, riskPct, 0.02);
+  const retOk   = nearRel(retVal,  retPct,  0.005);
+  const riskOk  = nearRel(riskVal, riskPct, 0.005);
   if(retOk && riskOk){
     showFB('q4_fb',true,
       `✓ Correct! Return ≈ ${retPct.toFixed(3)} %/month, Risk ≈ ${riskPct.toFixed(3)} %/month. Charts unlocked!`);
