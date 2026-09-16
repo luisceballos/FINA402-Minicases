@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mini Case 1 — Portfolio Diversification</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#002147;--gold:#c49a3c;--light:#f0f4f8;--card:#fff;
+  --success:#1a7f48;--error:#c0392b;--muted:#6b7280;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--light);color:#1a1a2e;min-height:100vh}
+
+/* HEADER */
+header{background:var(--navy);color:#fff;padding:0}
+.hdr-top{display:flex;align-items:center;gap:16px;padding:14px 32px;border-bottom:3px solid var(--gold)}
+.hdr-logo{font-size:13px;font-weight:600;letter-spacing:.5px;opacity:.85;white-space:nowrap}
+.hdr-title{flex:1}
+.hdr-title h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.hdr-title p{font-size:13px;opacity:.8;margin-top:2px}
+.group-badge{background:var(--gold);color:#fff;padding:8px 20px;border-radius:24px;font-weight:800;font-size:18px;white-space:nowrap}
+
+/* MAIN */
+main{max-width:900px;margin:0 auto;padding:24px 16px 60px}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px}
+.card h2{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h2 .badge{background:var(--navy);color:#fff;border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.card h3{font-size:14px;font-weight:600;color:var(--navy);margin:14px 0 8px}
+
+/* TEAM GRID */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.team-input{width:100%;border:1.5px solid #dde2ea;border-radius:6px;padding:8px 12px;font-size:14px;transition:border-color .2s}
+.team-input:focus{outline:none;border-color:var(--navy)}
+
+/* DATA WINDOW */
+.window-box{background:linear-gradient(135deg,var(--navy) 0%,#1a3a6b 100%);color:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.window-box .wlabel{font-size:12px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.window-box .wval{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.etf-chips{display:flex;gap:8px;flex-wrap:wrap}
+.etf-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600}
+
+canvas{width:100%;height:auto;display:block;border-radius:6px;cursor:not-allowed;user-select:none}
+
+/* FORMULA */
+.formula-box{background:#f8f4ff;border-left:4px solid var(--navy);padding:12px 16px;border-radius:0 6px 6px 0;font-family:monospace;font-size:15px;margin:12px 0}
+
+/* INPUTS & VALIDATION */
+.step-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin-bottom:14px}
+.input-group{display:flex;flex-direction:column;gap:4px}
+.input-group label{font-size:13px;color:var(--muted);font-weight:500}
+.num-input{border:2px solid #dde2ea;border-radius:6px;padding:9px 12px;font-size:15px;font-family:monospace;width:100%;transition:border-color .2s}
+.num-input:focus{outline:none;border-color:var(--navy)}
+.num-input.ok{border-color:var(--success);background:#f0faf4}
+.num-input.err{border-color:var(--error);background:#fef2f0}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:520px){.stats-grid{grid-template-columns:1fr}}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:6px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:#003a7a}
+.btn-success{background:var(--success);color:#fff}
+.btn-sm{padding:7px 16px;font-size:13px}
+
+/* FEEDBACK */
+.feedback{display:none;padding:10px 14px;border-radius:6px;font-size:14px;margin-top:10px;font-weight:500}
+.feedback.ok{background:#ecfdf5;color:var(--success);border:1px solid #6ee7b7;display:flex;align-items:center;gap:8px}
+.feedback.err{background:#fef2f0;color:var(--error);border:1px solid #fca5a5;display:flex;align-items:center;gap:8px}
+
+/* LOCK OVERLAY */
+.section-locked{position:relative;user-select:none}
+.lock-overlay{position:absolute;inset:0;background:rgba(240,244,248,.92);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:10;backdrop-filter:blur(3px)}
+.lock-icon{font-size:36px}
+.lock-msg{font-size:15px;color:var(--muted);font-weight:600;text-align:center;max-width:260px}
+.section-locked .card{opacity:.4;pointer-events:none}
+
+/* PORTFOLIO TABLES */
+.ptable{width:100%;border-collapse:collapse;font-size:14px}
+.ptable th{background:var(--navy);color:#fff;padding:9px 14px;text-align:center;font-weight:600;font-size:13px}
+.ptable td{padding:8px 12px;text-align:center;border-bottom:1px solid #e8edf2}
+.ptable tr:last-child td{border-bottom:none}
+.ptable tr:nth-child(even){background:#f8fafc}
+.ptable td.wgt{font-weight:700;color:var(--navy)}
+.ptable input[type=text]{width:90px;border:1.5px solid #dde2ea;border-radius:5px;padding:5px 8px;text-align:center;font-family:monospace;font-size:13px}
+.ptable input[type=text]:focus{outline:none;border-color:var(--navy)}
+.ptable input.ok{border-color:var(--success);background:#f0faf4}
+.ptable input.err{border-color:var(--error);background:#fef2f0}
+.rho-label{display:inline-block;background:var(--gold);color:#fff;padding:3px 12px;border-radius:12px;font-weight:700;font-size:13px;margin-left:8px}
+
+/* Q4 */
+.q4-area{width:100%;min-height:90px;border:2px solid #dde2ea;border-radius:6px;padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical;transition:border-color .2s}
+.q4-area:focus{outline:none;border-color:var(--navy)}
+.q4-item{margin-bottom:16px}
+.q4-item p{font-size:14px;color:#333;margin-bottom:6px}
+
+/* SUBMIT */
+.submit-section{text-align:center;padding:8px}
+.submit-section p{font-size:13px;color:var(--muted);margin-top:10px}
+
+/* HINT */
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.note-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:10px 14px;font-size:13px;color:#92400e;margin:12px 0;display:flex;gap:8px;align-items:start}
+
+
+/* LEGEND */
+.leg-swatch{display:inline-block;width:20px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.leg-dash{background:repeating-linear-gradient(90deg,#805ad5 0,#805ad5 5px,transparent 5px,transparent 9px)!important;height:3px}
+
+/* FADE IN */
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .4s ease forwards}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:"AIzaSyAjHL3MztreUN7J7QKW3q_nRbiNoxLwA0E",
+    authDomain:"fina402-60e86.firebaseapp.com",
+    projectId:"fina402-60e86",
+    storageBucket:"fina402-60e86.firebasestorage.app",
+    messagingSenderId:"1058911893067",
+    appId:"1:1058911893067:web:0ab85f8a600d4fb8d2ffce"
+  });
+</script>
+</head>
+<body>
+
+<header>
+  <div class="hdr-top">
+    <div class="hdr-logo">🎓 UNIVERSITY OF SAN DIEGO<br>Knauss School of Business</div>
+    <div class="hdr-title">
+      <h1>Mini Case 1: Portfolio Diversification</h1>
+      <p>FINA 402 — Investments &nbsp;|&nbsp; Fall 2026</p>
+    </div>
+    <div class="group-badge">Group <span id="groupNum">?</span></div>
+  </div>
+</header>
+
+<main>
+
+<!-- TEAM MEMBERS -->
+<div class="card">
+  <h2><span class="badge">👥</span> Team Members</h2>
+  <div class="team-grid" id="teamGrid"></div>
+</div>
+
+<!-- INSTRUCTIONS -->
+<div class="card">
+  <h2><span class="badge">📋</span> Instructions</h2>
+  <ol style="padding-left:20px;line-height:2;font-size:14px;color:#444">
+    <li>This is an <strong>in-class evaluation</strong>. You must attend to participate and submit.</li>
+    <li>Work <strong>only with your assigned group</strong>. No switching allowed.</li>
+    <li><strong>One submission per group</strong>. Coordinate before submitting.</li>
+    <li>If someone in your group is <strong>not physically present</strong>, <strong>you</strong> will individually receive a grade of 0 — regardless of your group's submission. The rest of the group is not affected.</li>
+    <li><strong>No AI tools</strong> or external materials not covered in class. Use only your class notes.</li>
+    <li>Complete all steps and submit through Canvas by the end of class.</li>
+  </ol>
+  <div class="note-box" style="margin-top:14px">
+    ⚠️ <span><strong>Each group has a different data window.</strong> Download your file above — it already contains only your group's rows.</span>
+  </div>
+</div>
+
+<!-- CONTEXT + CHART -->
+<div class="card">
+  <h2><span class="badge">📈</span> Your Data</h2>
+  <div class="window-box" id="windowBox">
+    <div>
+      <div class="wlabel">ETFs</div>
+      <div class="etf-chips">
+        <span class="etf-chip">VGT — Information Technology</span>
+        <span class="etf-chip">VHT — Health Care</span>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="wlabel">Your Data Window</div>
+      <div class="wval" id="windowRange">— —</div>
+      <div style="font-size:12px;opacity:.7;margin-top:2px" id="windowMonths"></div>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:var(--muted);margin-bottom:10px">
+    Normalized price performance (starting at 100) — chart is display only, work from your Excel file.
+  </p>
+  <canvas id="priceChart" width="860" height="280"></canvas>
+
+  <div class="note-box" style="margin-top:14px">
+    📂 <span>Download your group's data file below. Use the <strong>Returns</strong> tab to compute monthly returns.</span>
+    <div style="margin-top:10px">
+      <button id="dlBtn" onclick="downloadExcel()" style="display:inline-flex;align-items:center;gap:8px;background:#002147;color:#fff;border:none;padding:9px 20px;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;letter-spacing:.02em;">⬇ Download Your Data (Excel)</button>
+      <span id="dlWindowHint" style="font-size:.78rem;color:#6b7280;margin-left:12px;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 1 -->
+<div class="card" id="card-step1">
+  <h2><span class="badge">Q1</span> Compute Monthly Returns</h2>
+  <p style="font-size:14px;color:#444;margin-bottom:10px">
+    In the <em>Returns</em> tab of the Excel file, calculate the monthly return for each ETF:
+  </p>
+  <div class="formula-box">R<sub>t</sub> = (P<sub>t</sub> − P<sub>t−1</sub>) / P<sub>t−1</sub></div>
+
+  <h3>✅ Spot Check</h3>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+    Enter the VGT return for <strong id="checkMonth"></strong> to verify your formula is correct (enter as %, e.g. if the return is 3.12%, type <code>3.12</code>):
+  </p>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div class="input-group" style="flex:1;min-width:180px">
+      <label>VGT Monthly Return</label>
+      <input class="num-input" id="s1_input" type="text" placeholder="e.g. 1.50" autocomplete="off">
+    </div>
+    <div style="padding-top:20px">
+      <button class="btn btn-primary" onclick="validateStep1()">Verify ✓</button>
+    </div>
+  </div>
+  <div class="feedback" id="s1_fb"></div>
+</div>
+
+<!-- STEP 2 -->
+<div class="card" id="card-step2">
+  <h2><span class="badge">Q2</span> ETF Return &amp; Risk</h2>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Enter values as percentages with 2 decimal places — e.g. if the average is 0.90%, type <code>0.90</code> (not 0.0090). Round to 2 decimal places.</p>
+  <div class="stats-grid">
+    <div>
+      <h3 style="color:#2563eb">VGT — Information Technology</h3>
+      <div class="input-group" style="margin-bottom:10px">
+        <label>Average Monthly Return</label>
+        <input class="num-input" id="s2_mu1" type="text" placeholder="e.g. 2.50">
+      </div>
+      <div class="input-group">
+        <label>Monthly Std Dev (Risk)</label>
+        <input class="num-input" id="s2_s1" type="text" placeholder="e.g. 8.00">
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#d97706">VHT — Health Care</h3>
+      <div class="input-group" style="margin-bottom:10px">
+        <label>Average Monthly Return</label>
+        <input class="num-input" id="s2_mu2" type="text" placeholder="e.g. 2.00">
+      </div>
+      <div class="input-group">
+        <label>Monthly Std Dev (Risk)</label>
+        <input class="num-input" id="s2_s2" type="text" placeholder="e.g. 6.50">
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <button class="btn btn-primary" onclick="validateStep2()">Verify ✓</button>
+  </div>
+  <div class="feedback" id="s2_fb"></div>
+</div>
+
+<!-- STEP 3 -->
+<div class="card" id="card-step3">
+  <h2><span class="badge">Q3</span> Correlation</h2>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+    Use <code>=CORREL()</code> in Excel to compute the correlation between VGT and VHT monthly returns.
+  </p>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div class="input-group" style="flex:1;min-width:200px">
+      <label>Correlation ρ (VGT, VHT)</label>
+      <input class="num-input" id="s3_rho" type="text" placeholder="e.g. 0.50">
+    </div>
+    <div style="padding-top:20px">
+      <button class="btn btn-primary" onclick="validateStep3()">Verify &amp; Unlock ↓</button>
+    </div>
+  </div>
+  <div class="feedback" id="s3_fb"></div>
+</div>
+
+<!-- PORTFOLIO SECTION (locked) -->
+<!-- PORTFOLIO SECTION (locked) -->
+<div id="portfolioWrapper" class="section-locked">
+  <div class="lock-overlay" id="lockOverlay">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-msg">Complete Q1–Q3 to unlock the Portfolio Analysis</div>
+  </div>
+
+  <!-- Q4: COMPUTATION GATE -->
+  <div class="card" id="q4Card">
+    <h2><span class="badge">Q4</span> Portfolio Computation — 50 / 50 Split</h2>
+    <p style="font-size:14px;color:#444;margin-bottom:14px">
+      Before exploring the interactive charts, verify you understand the math.
+      Using the statistics your group verified in Steps 2 and 3, calculate the
+      <strong>expected monthly return</strong> and <strong>risk (σ)</strong> of an
+      <em>equal-weight portfolio</em> (50&nbsp;% VGT / 50&nbsp;% VHT).
+      Enter your answers in <strong>percentage units</strong> (e.g., 1.234 means 1.234 %/month).
+    </p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 20px;margin-bottom:16px">
+      <p style="font-size:13px;color:#555;margin:0 0 12px">
+        <strong>Formulas (w = 0.50, ρ = your group's historical correlation):</strong><br>
+        E[R<sub>p</sub>] = w·μ<sub>VGT</sub> + (1−w)·μ<sub>VHT</sub><br>
+        σ<sub>p</sub> = √(w²σ²<sub>VGT</sub> + (1−w)²σ²<sub>VHT</sub> + 2w(1−w)ρ·σ<sub>VGT</sub>·σ<sub>VHT</sub>)
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
+            Portfolio Expected Return (%/month)
+          </label>
+          <input type="number" id="q4_ret" step="0.0001" placeholder="e.g. 1.234"
+            style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e0;border-radius:6px;font-family:monospace;font-size:14px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px">
+            Portfolio Risk / Std Dev (%/month)
+          </label>
+          <input type="number" id="q4_risk" step="0.0001" placeholder="e.g. 4.567"
+            style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e0;border-radius:6px;font-family:monospace;font-size:14px;box-sizing:border-box">
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="validateQ4()" style="padding:11px 32px;font-size:15px">
+      ✓ Check My Answer
+    </button>
+    <div id="q4_fb" style="margin-top:10px"></div>
+  </div>
+
+  <!-- CHARTS SECTION (locked until Q4 verified) -->
+  <div id="chartsWrapper" class="section-locked">
+    <div class="lock-overlay" id="chartsLockOverlay">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-msg">Answer Q4 correctly to unlock the interactive charts</div>
+    </div>
+
+    <!-- Q1: EFFICIENT FRONTIER -->
+    <div class="card">
+      <h2><span class="badge">Q5</span> Efficient Frontier</h2>
+      <p style="font-size:13px;color:#444;margin-bottom:12px">
+        This chart maps every possible VGT / VHT portfolio to its (Risk, Return) coordinate.
+        Three curves correspond to the three correlations assigned to your group.
+        The <span style="color:#805ad5;font-weight:700">purple dashed curve</span>
+        responds to the slider in real time — drag it to see how correlation reshapes diversification.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;margin-bottom:12px;font-size:13px;color:#444;align-items:center">
+        <span><span class="leg-swatch" style="background:#002147"></span>Historical ρ (your group)</span>
+        <span><span class="leg-swatch" style="background:#c49a3c"></span>ρ₂ = <span id="leg_rho2">—</span></span>
+        <span><span class="leg-swatch" style="background:#e53e3e"></span>ρ₃ = <span id="leg_rho3">—</span></span>
+        <span><span class="leg-swatch leg-dash"></span>ρ slider</span>
+      </div>
+      <canvas id="frontierChart" width="840" height="380" style="width:100%;border-radius:6px;background:#f8fafc"></canvas>
+      <div style="margin-top:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <label style="font-size:14px;font-weight:700;color:#805ad5;white-space:nowrap">ρ slider</label>
+          <input type="range" id="rhoSlider" min="-100" max="100" value="0" step="1"
+                 style="flex:1;min-width:180px;accent-color:#805ad5;height:6px">
+          <span id="rhoSliderVal" style="font-size:22px;font-weight:800;color:#805ad5;min-width:58px;text-align:center">0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px">
+          <span>−1.00  perfect negative</span><span>0  uncorrelated</span><span>+1.00  perfect positive</span>
+        </div>
+      </div>
+      <div id="frontierReadout" style="display:none;margin-top:10px;padding:12px 16px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;font-size:13px;color:#3730a3">
+        At ρ = <strong id="ro_rho">—</strong>: &nbsp;
+        minimum-risk portfolio → &nbsp;
+        w<sub>VGT</sub> = <strong id="ro_wmvp">—</strong>%, &nbsp;
+        Return = <strong id="ro_ret">—</strong>%, &nbsp;
+        Risk = <strong id="ro_risk">—</strong>%
+      </div>
+      <div style="margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:14px 16px;font-size:13px;color:#78350f">
+        <strong>💡 How to read this chart:</strong>
+        Each point on a curve represents one particular VGT / VHT mix. Moving from right (100 % VGT)
+        to left (100 % VHT), the curve traces every possible split.
+        The <em>leftmost tip</em> of each curve is the <strong>minimum-variance portfolio (MVP)</strong> —
+        the allocation that minimises risk for that correlation.
+        As ρ decreases, the curve bows further left, showing larger diversification gains.
+        Only the upper half of each curve (above the MVP) is the true <em>efficient frontier</em>;
+        rational investors would never choose a portfolio below the MVP.
+      </div>
+      <!-- Q5: analysis questions a, b, d -->
+      <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e2e8f0">
+        <p style="font-size:14px;color:#444;margin-bottom:14px;font-weight:600">Questions — Efficient Frontier (Q5)</p>
+        <div class="q4-item">
+          <p><strong>(a)</strong> As you move the ρ slider from +1 toward −1, what happens to the shape of the efficient frontier? What does this tell you about the role of correlation in portfolio diversification?</p>
+          <textarea class="q4-area" id="q3a" placeholder="Enter your answer here..."></textarea>
+        </div>
+        <div class="q4-item">
+          <p><strong>(b)</strong> Looking at the three curves for your group (historical ρ, ρ₂, and ρ₃), which one offers the greatest diversification benefit? How can you tell from the chart?</p>
+          <textarea class="q4-area" id="q3b" placeholder="Enter your answer here..."></textarea>
+        </div>
+        <div class="q4-item">
+          <p><strong>(c)</strong> If the correlation between VGT and VHT were exactly −1, what would be the minimum possible portfolio risk? What would that mean in practice for an investor?</p>
+          <textarea class="q4-area" id="q3d" placeholder="Enter your answer here..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q6: BUILD YOUR PORTFOLIO -->
+    <div class="card">
+      <h2><span class="badge">Q6</span> Build Your Portfolio</h2>
+      <p style="font-size:13px;color:#444;margin-bottom:8px">
+        Drag the slider to choose any VGT / VHT split. The
+        <span style="display:inline-block;width:12px;height:12px;background:#c49a3c;border-radius:50%;vertical-align:middle;border:2px solid #fff;box-shadow:0 0 0 1.5px #c49a3c"></span>
+        <strong>gold dot</strong> shows your current portfolio on the historical-ρ frontier.
+        Watch how Expected Return and Risk change as you move across allocations,
+        and locate the <strong>minimum-variance portfolio (MVP)</strong> — the leftmost point.
+      </p>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+        <canvas id="portfolioChart" width="600" height="420"
+                style="flex:1;min-width:300px;max-width:640px;width:100%;border-radius:6px;background:#f8fafc"></canvas>
+        <div style="flex:1;min-width:220px">
+          <label style="font-size:14px;font-weight:600;color:var(--navy)">Weight in VGT (w<sub>VGT</sub>)</label>
+          <input type="range" id="wSlider" min="0" max="100" value="50" step="1"
+                 style="width:100%;margin:10px 0 2px;accent-color:#2563eb;height:6px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:14px">
+            <span>0% VGT</span><span>50%</span><span>100% VGT</span>
+          </div>
+          <div style="background:var(--navy);color:#fff;border-radius:10px;padding:16px 20px">
+            <div style="font-size:11px;opacity:.65;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Current Portfolio</div>
+            <div style="font-size:17px;font-weight:800;margin-bottom:12px" id="pw_alloc">50% VGT / 50% VHT</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <div style="font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.4px">Exp. Return</div>
+                <div style="font-size:24px;font-weight:800" id="pw_ret">—</div>
+              </div>
+              <div>
+                <div style="font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.4px">Risk (σ)</div>
+                <div style="font-size:24px;font-weight:800" id="pw_risk">—</div>
+              </div>
+            </div>
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:12px">
+              vs. 50/50 naïve: <span id="pw_vs" style="font-weight:700"></span>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:12px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:#92400e">
+            🎯 <strong>Task:</strong> Drag to find the <strong>minimum-risk</strong> allocation under your historical ρ.<br>
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              Record: w<sub>VGT</sub> = <input type="text" id="mvp_answer" placeholder="?"
+                style="width:44px;text-align:center;border:1.5px solid #d97706;border-radius:4px;padding:3px 6px;font-family:monospace;font-size:13px">%
+              &nbsp; Risk = <input type="text" id="mvp_risk_answer" placeholder="?"
+                style="width:60px;text-align:center;border:1.5px solid #d97706;border-radius:4px;padding:3px 6px;font-family:monospace;font-size:13px">%
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:10px 14px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:8px;font-size:12px;color:#276749">
+            <strong>📐 Reading the chart:</strong> The navy curve is your group's frontier
+            under the historical ρ. Moving the slider left (more VHT) or right (more VGT)
+            slides the gold dot along it. Risk decreases as you approach the MVP, then rises
+            again — the leftmost tip is the sweet spot.
+          </div>
+        </div>
+      </div>
+      <!-- Q6: analysis questions c + e -->
+      <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e2e8f0">
+        <p style="font-size:14px;color:#444;margin-bottom:14px;font-weight:600">Questions — Build Your Portfolio (Q6)</p>
+        <div class="q4-item">
+          <p><strong>(d)</strong> Using the slider, what w<sub>VGT</sub> minimizes risk under your group's historical correlation? Is the minimum at 50/50? Why or why not?</p>
+          <textarea class="q4-area" id="q3c" placeholder="Enter your answer here..."></textarea>
+        </div>
+        <div class="q4-item">
+          <p><strong>(e)</strong> Compare the risk of the MVP allocation you found with holding 100&nbsp;% VGT and 100&nbsp;% VHT individually (use your Q2 numbers). By approximately how many percentage points does the optimal diversified portfolio reduce risk relative to the riskier single-asset position? Is the trade-off in expected return worth it for a risk-averse investor?</p>
+          <textarea class="q4-area" id="q3e" placeholder="Enter your answer here..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="card submit-section">
+      <h2 style="justify-content:center"><span class="badge">📤</span> Submit</h2>
+      <p style="font-size:14px;color:#444;margin-bottom:14px;text-align:center">
+        When your group has completed all questions, click below to save your submission directly to Canvas.
+      </p>
+      <div id="alreadySubmittedBanner" style="display:none;margin-bottom:14px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;font-size:13px;color:#78350f;text-align:center">
+        ⚠️ This group has already submitted. Resubmission is currently <strong>disabled</strong>.
+        Contact your professor to allow a new submission.
+      </div>
+      <button class="btn btn-success" id="submitBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px" onclick="submitToFirebase()">
+        📤 SUBMIT
+      </button>
+      <div id="submitResult" style="margin-top:12px"></div>
+    </div>
+
+  </div><!-- end chartsWrapper -->
+
+</div><!-- end portfolioWrapper -->
+
+<!-- submissionCard removed — submissions saved directly to Firestore -->
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════
+// EMBEDDED DATA
+// ═══════════════════════════════════════════════════
+const GROUPS = [{"grupo":1,"start":"2005-01","end":"2016-12","dates":["2005-01","2005-02","2005-03","2005-04","2005-05","2005-06","2005-07","2005-08","2005-09","2005-10","2005-11","2005-12","2006-01","2006-02","2006-03","2006-04","2006-05","2006-06","2006-07","2006-08","2006-09","2006-10","2006-11","2006-12","2007-01","2007-02","2007-03","2007-04","2007-05","2007-06","2007-07","2007-08","2007-09","2007-10","2007-11","2007-12","2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12"],"vgt":[37.9191,38.1334,37.242,35.5706,38.6562,38.0562,40.319,40.079,40.3619,39.539,42.3247,41.4676,43.2191,42.7382,43.7429,43.3736,40.1449,39.6983,38.0668,40.9521,42.4634,44.1551,45.6922,45.1082,45.9204,44.9046,45.094,47.3495,49.321,49.6051,48.9594,50.3713,52.1706,55.7003,51.258,51.7574,45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971],"vht":[37.3014,38.452,38.2525,39.4875,40.1548,40.1778,41.3284,41.2287,41.0062,39.848,40.6534,41.4358,42.51,42.9658,42.6491,41.2509,40.2389,40.4398,42.062,43.2362,43.746,44.14,44.1245,43.9855,45.9363,45.0071,45.1399,47.9196,48.7473,47.1076,45.2101,46.5376,47.9665,48.9503,49.1299,47.334,45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601],"rho2":0.1,"rho3":-0.7},{"grupo":2,"start":"2005-07","end":"2017-06","dates":["2005-07","2005-08","2005-09","2005-10","2005-11","2005-12","2006-01","2006-02","2006-03","2006-04","2006-05","2006-06","2006-07","2006-08","2006-09","2006-10","2006-11","2006-12","2007-01","2007-02","2007-03","2007-04","2007-05","2007-06","2007-07","2007-08","2007-09","2007-10","2007-11","2007-12","2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06"],"vgt":[40.319,40.079,40.3619,39.539,42.3247,41.4676,43.2191,42.7382,43.7429,43.3736,40.1449,39.6983,38.0668,40.9521,42.4634,44.1551,45.6922,45.1082,45.9204,44.9046,45.094,47.3495,49.321,49.6051,48.9594,50.3713,52.1706,55.7003,51.258,51.7574,45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991],"vht":[41.3284,41.2287,41.0062,39.848,40.6534,41.4358,42.51,42.9658,42.6491,41.2509,40.2389,40.4398,42.062,43.2362,43.746,44.14,44.1245,43.9855,45.9363,45.0071,45.1399,47.9196,48.7473,47.1076,45.2101,46.5376,47.9665,48.9503,49.1299,47.334,45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566],"rho2":0.15,"rho3":-0.6},{"grupo":3,"start":"2006-01","end":"2017-12","dates":["2006-01","2006-02","2006-03","2006-04","2006-05","2006-06","2006-07","2006-08","2006-09","2006-10","2006-11","2006-12","2007-01","2007-02","2007-03","2007-04","2007-05","2007-06","2007-07","2007-08","2007-09","2007-10","2007-11","2007-12","2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12"],"vgt":[43.2191,42.7382,43.7429,43.3736,40.1449,39.6983,38.0668,40.9521,42.4634,44.1551,45.6922,45.1082,45.9204,44.9046,45.094,47.3495,49.321,49.6051,48.9594,50.3713,52.1706,55.7003,51.258,51.7574,45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319],"vht":[42.51,42.9658,42.6491,41.2509,40.2389,40.4398,42.062,43.2362,43.746,44.14,44.1245,43.9855,45.9363,45.0071,45.1399,47.9196,48.7473,47.1076,45.2101,46.5376,47.9665,48.9503,49.1299,47.334,45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506],"rho2":0.2,"rho3":-0.5},{"grupo":4,"start":"2006-07","end":"2018-06","dates":["2006-07","2006-08","2006-09","2006-10","2006-11","2006-12","2007-01","2007-02","2007-03","2007-04","2007-05","2007-06","2007-07","2007-08","2007-09","2007-10","2007-11","2007-12","2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06"],"vgt":[38.0668,40.9521,42.4634,44.1551,45.6922,45.1082,45.9204,44.9046,45.094,47.3495,49.321,49.6051,48.9594,50.3713,52.1706,55.7003,51.258,51.7574,45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528],"vht":[42.062,43.2362,43.746,44.14,44.1245,43.9855,45.9363,45.0071,45.1399,47.9196,48.7473,47.1076,45.2101,46.5376,47.9665,48.9503,49.1299,47.334,45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938],"rho2":0.25,"rho3":-0.4},{"grupo":5,"start":"2007-01","end":"2018-12","dates":["2007-01","2007-02","2007-03","2007-04","2007-05","2007-06","2007-07","2007-08","2007-09","2007-10","2007-11","2007-12","2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12"],"vgt":[45.9204,44.9046,45.094,47.3495,49.321,49.6051,48.9594,50.3713,52.1706,55.7003,51.258,51.7574,45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917],"vht":[45.9363,45.0071,45.1399,47.9196,48.7473,47.1076,45.2101,46.5376,47.9665,48.9503,49.1299,47.334,45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993],"rho2":0.3,"rho3":-0.3},{"grupo":6,"start":"2007-07","end":"2019-06","dates":["2007-07","2007-08","2007-09","2007-10","2007-11","2007-12","2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06"],"vgt":[48.9594,50.3713,52.1706,55.7003,51.258,51.7574,45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331],"vht":[45.2101,46.5376,47.9665,48.9503,49.1299,47.334,45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539],"rho2":0.35,"rho3":-0.8},{"grupo":7,"start":"2008-01","end":"2019-12","dates":["2008-01","2008-02","2008-03","2008-04","2008-05","2008-06","2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12"],"vgt":[45.0598,43.7302,43.8942,47.0455,50.0414,45.5519,44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619],"vht":[45.4455,44.4644,42.4153,43.0324,44.0055,42.0039,44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483],"rho2":0.1,"rho3":-0.6},{"grupo":8,"start":"2008-07","end":"2020-06","dates":["2008-07","2008-08","2008-09","2008-10","2008-11","2008-12","2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06"],"vgt":[44.9561,46.139,40.0608,32.8688,29.0441,29.3981,28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857],"vht":[44.5515,45.3901,42.6447,37.0748,34.2107,36.157,36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972],"rho2":0.15,"rho3":-0.5},{"grupo":9,"start":"2009-01","end":"2020-12","dates":["2009-01","2009-02","2009-03","2009-04","2009-05","2009-06","2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12"],"vgt":[28.6764,27.5171,30.7073,34.6819,35.5796,37.1137,40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089],"vht":[36.1378,31.874,33.7485,34.0381,36.1941,37.4411,39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023],"rho2":0.2,"rho3":-0.4},{"grupo":10,"start":"2009-07","end":"2021-06","dates":["2009-07","2009-08","2009-09","2009-10","2009-11","2009-12","2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06"],"vgt":[40.5479,41.5677,43.494,42.9797,45.2285,47.8259,44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089,343.2621,348.3431,350.2876,368.9788,364.4172,390.3477],"vht":[39.6454,40.4901,41.3107,40.0718,43.5794,43.5955,44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023,219.9497,215.7146,219.6808,229.4315,231.1169,238.0028],"rho2":0.25,"rho3":-0.7},{"grupo":11,"start":"2010-01","end":"2021-12","dates":["2010-01","2010-02","2010-03","2010-04","2010-05","2010-06","2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12"],"vgt":[44.1155,46.1033,49.1943,50.2801,46.2609,43.3099,46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089,343.2621,348.3431,350.2876,368.9788,364.4172,390.3477,404.1094,418.2951,393.404,426.5615,439.8547,450.1513],"vht":[44.9781,45.2177,46.8542,45.5814,42.4242,41.5233,41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023,219.9497,215.7146,219.6808,229.4315,231.1169,238.0028,247.6565,253.5191,238.713,250.5148,240.5601,258.2401],"rho2":0.3,"rho3":-0.3},{"grupo":12,"start":"2010-07","end":"2022-06","dates":["2010-07","2010-08","2010-09","2010-10","2010-11","2010-12","2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06"],"vgt":[46.4273,43.2136,48.6864,51.8038,51.3134,53.8703,56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089,343.2621,348.3431,350.2876,368.9788,364.4172,390.3477,404.1094,418.2951,393.404,426.5615,439.8547,450.1513,415.6154,397.5541,409.9263,362.0261,356.012,321.9488],"vht":[41.9283,41.0687,45.069,45.9368,44.8789,46.4905,47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023,219.9497,215.7146,219.6808,229.4315,231.1169,238.0028,247.6565,253.5191,238.713,250.5148,240.5601,258.2401,238.554,236.2204,247.344,233.5313,235.7742,229.6501],"rho2":0.35,"rho3":-0.8},{"grupo":13,"start":"2011-01","end":"2022-12","dates":["2011-01","2011-02","2011-03","2011-04","2011-05","2011-06","2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12"],"vgt":[56.3178,57.6918,56.5732,58.2996,57.2426,55.7981,55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089,343.2621,348.3431,350.2876,368.9788,364.4172,390.3477,404.1094,418.2951,393.404,426.5615,439.8547,450.1513,415.6154,397.5541,409.9263,362.0261,356.012,321.9488,365.6507,344.9878,303.5928,326.9268,344.4909,316.2437],"vht":[47.6739,49.3303,50.4822,53.7193,54.7619,53.9379,51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023,219.9497,215.7146,219.6808,229.4315,231.1169,238.0028,247.6565,253.5191,238.713,250.5148,240.5601,258.2401,238.554,236.2204,247.344,233.5313,235.7742,229.6501,239.5171,226.5721,218.8814,238.6692,249.7861,243.5992],"rho2":0.1,"rho3":-0.5},{"grupo":14,"start":"2011-07","end":"2023-06","dates":["2011-07","2011-08","2011-09","2011-10","2011-11","2011-12","2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06"],"vgt":[55.7189,52.1428,49.9937,56.1328,55.0142,54.0542,58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089,343.2621,348.3431,350.2876,368.9788,364.4172,390.3477,404.1094,418.2951,393.404,426.5615,439.8547,450.1513,415.6154,397.5541,409.9263,362.0261,356.012,321.9488,365.6507,344.9878,303.5928,326.9268,344.4909,316.2437,347.7877,349.5147,382.618,382.3095,414.6561,439.8012],"vht":[51.8359,50.1038,47.6655,50.5326,51.0035,51.4659,54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023,219.9497,215.7146,219.6808,229.4315,231.1169,238.0028,247.6565,253.5191,238.713,250.5148,240.5601,258.2401,238.554,236.2204,247.344,233.5313,235.7742,229.6501,239.5171,226.5721,218.8814,238.6692,249.7861,243.5992,242.5939,231.4342,235.0818,243.0545,233.2825,242.1446],"rho2":0.2,"rho3":-0.6},{"grupo":15,"start":"2012-01","end":"2023-12","dates":["2012-01","2012-02","2012-03","2012-04","2012-05","2012-06","2012-07","2012-08","2012-09","2012-10","2012-11","2012-12","2013-01","2013-02","2013-03","2013-04","2013-05","2013-06","2013-07","2013-08","2013-09","2013-10","2013-11","2013-12","2014-01","2014-02","2014-03","2014-04","2014-05","2014-06","2014-07","2014-08","2014-09","2014-10","2014-11","2014-12","2015-01","2015-02","2015-03","2015-04","2015-05","2015-06","2015-07","2015-08","2015-09","2015-10","2015-11","2015-12","2016-01","2016-02","2016-03","2016-04","2016-05","2016-06","2016-07","2016-08","2016-09","2016-10","2016-11","2016-12","2017-01","2017-02","2017-03","2017-04","2017-05","2017-06","2017-07","2017-08","2017-09","2017-10","2017-11","2017-12","2018-01","2018-02","2018-03","2018-04","2018-05","2018-06","2018-07","2018-08","2018-09","2018-10","2018-11","2018-12","2019-01","2019-02","2019-03","2019-04","2019-05","2019-06","2019-07","2019-08","2019-09","2019-10","2019-11","2019-12","2020-01","2020-02","2020-03","2020-04","2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04","2021-05","2021-06","2021-07","2021-08","2021-09","2021-10","2021-11","2021-12","2022-01","2022-02","2022-03","2022-04","2022-05","2022-06","2022-07","2022-08","2022-09","2022-10","2022-11","2022-12","2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12"],"vgt":[58.7945,62.8958,65.852,64.5382,59.2562,61.0139,61.3334,64.476,65.1596,60.9251,61.8927,61.3512,63.4581,63.7904,65.4883,65.8386,68.6324,66.4585,70.0787,69.7733,72.4953,75.1453,77.8223,80.4365,79.4056,83.2651,83.1198,82.3933,85.2266,87.8965,88.3505,92.1101,90.8842,92.6187,97.241,94.8799,91.5471,99.1753,96.7324,97.9765,100.4194,96.4691,98.6576,92.9365,90.8115,101.2884,102.4896,99.2985,93.8141,92.9029,100.8089,96.4602,101.6154,98.9362,106.7745,109.2678,111.5664,111.3417,111.9276,112.9971,118.284,124.1264,126.5809,129.8901,135.6172,131.7991,137.6387,141.9182,142.6409,153.6202,155.2954,155.0319,167.1818,167.3423,161.3597,161.6562,173.0505,171.528,176.5083,192.2855,192.058,176.3463,173.759,158.6917,171.9921,184.5937,191.5341,204.3461,186.2009,201.9331,209.7039,205.1036,207.0148,215.6132,227.6742,236.0619,245.7264,227.8127,204.8526,234.859,253.3275,270.4857,287.2685,319.2574,303.01,290.5938,327.007,345.0089,343.2621,348.3431,350.2876,368.9788,364.4172,390.3477,404.1094,418.2951,393.404,426.5615,439.8547,450.1513,415.6154,397.5541,409.9263,362.0261,356.012,321.9488,365.6507,344.9878,303.5928,326.9268,344.4909,316.2437,347.7877,349.5147,382.618,382.3095,414.6561,439.8012,453.0878,443.1954,413.3289,407.1292,461.27,483.2039],"vht":[54.5454,55.4608,57.8048,57.5738,55.649,58.934,59.3019,60.2942,62.6297,61.7913,62.3902,61.3122,67.0629,67.9151,72.1066,74.1588,75.5936,75.1241,80.8633,78.1329,80.9938,83.9504,88.194,87.9158,90.5839,95.9667,94.0405,92.7828,95.4302,98.1831,97.9193,103.0558,102.8975,108.8256,112.3877,110.4615,112.3262,117.5242,119.1954,116.8294,122.9774,123.1005,126.6363,116.4336,107.7965,116.1713,116.9521,117.9015,107.3112,106.7502,109.7956,113.5134,116.2114,116.5777,123.3046,119.3785,119.1186,110.983,113.9522,114.0601,117.5699,125.1133,124.5081,127.0041,127.6295,133.566,134.8161,137.3715,138.4809,137.9132,141.8825,140.6506,150.7429,144.4238,140.6048,142.2289,144.4137,146.0938,155.4027,163.1909,166.2785,153.9825,164.0335,148.4993,157.887,160.4762,160.0679,156.7474,152.5538,162.4539,161.402,159.5028,157.6506,165.8111,175.9749,180.9483,177.1011,166.0554,157.3401,178.9545,186.7426,182.972,193.2628,197.8205,194.5119,189.5345,206.2831,214.0023,219.9497,215.7146,219.6808,229.4315,231.1169,238.0028,247.6565,253.5191,238.713,250.5148,240.5601,258.2401,238.554,236.2204,247.344,233.5313,235.7742,229.6501,239.5171,226.5721,218.8814,238.6692,249.7861,243.5992,242.5939,231.4342,235.0818,243.0545,233.2825,242.1446,245.5267,242.6479,233.3764,224.9788,237.7322,249.7882],"rho2":0.3,"rho3":-0.4}];
+const ANSWERS = [{"grupo":1,"start":"2005-01","end":"2016-12","rho2":0.1,"rho3":-0.7,"mu_vgt":0.009033,"mu_vht":0.008635,"s_vgt":0.05221,"s_vht":0.039633,"rho":0.665509,"tables":{"hist":[{"w":1.0,"ret":0.009033,"risk":0.05221},{"w":0.75,"ret":0.008934,"risk":0.046346},{"w":0.5,"ret":0.008834,"risk":0.041985},{"w":0.25,"ret":0.008734,"risk":0.039628},{"w":0.0,"ret":0.008635,"risk":0.039633}],"rho2":[{"w":1.0,"ret":0.009033,"risk":0.05221},{"w":0.75,"ret":0.008934,"risk":0.041341},{"w":0.5,"ret":0.008834,"risk":0.034317},{"w":0.25,"ret":0.008734,"risk":0.033638},{"w":0.0,"ret":0.008635,"risk":0.039633}],"rho3":[{"w":1.0,"ret":0.009033,"risk":0.05221},{"w":0.75,"ret":0.008934,"risk":0.03299},{"w":0.5,"ret":0.008834,"risk":0.018707},{"w":0.25,"ret":0.008734,"risk":0.0226},{"w":0.0,"ret":0.008635,"risk":0.039633}]},"check_ret_vgt":[0.005652,0.042238,0.018006],"check_ret_vht":[0.030846,0.025924,0.044351]},{"grupo":2,"start":"2005-07","end":"2017-06","rho2":0.15,"rho3":-0.6,"mu_vgt":0.009662,"mu_vht":0.009037,"s_vgt":0.051727,"s_vht":0.039946,"rho":0.668536,"tables":{"hist":[{"w":1.0,"ret":0.009662,"risk":0.051727},{"w":0.75,"ret":0.009506,"risk":0.046074},{"w":0.5,"ret":0.00935,"risk":0.041935},{"w":0.25,"ret":0.009193,"risk":0.039785},{"w":0.0,"ret":0.009037,"risk":0.039946}],"rho2":[{"w":1.0,"ret":0.009662,"risk":0.051727},{"w":0.75,"ret":0.009506,"risk":0.041485},{"w":0.5,"ret":0.00935,"risk":0.034969},{"w":0.25,"ret":0.009193,"risk":0.034366},{"w":0.0,"ret":0.009037,"risk":0.039946}],"rho3":[{"w":1.0,"ret":0.009662,"risk":0.051727},{"w":0.75,"ret":0.009506,"risk":0.033762},{"w":0.5,"ret":0.00935,"risk":0.021165},{"w":0.25,"ret":0.009193,"risk":0.024493},{"w":0.0,"ret":0.009037,"risk":0.039946}]},"check_ret_vgt":[-0.005953,-0.041097,-0.013017],"check_ret_vht":[-0.002412,0.040114,-0.04028]},{"grupo":3,"start":"2006-01","end":"2017-12","rho2":0.2,"rho3":-0.5,"mu_vgt":0.010316,"mu_vht":0.009199,"s_vgt":0.051691,"s_vht":0.039834,"rho":0.661628,"tables":{"hist":[{"w":1.0,"ret":0.010316,"risk":0.051691},{"w":0.75,"ret":0.010037,"risk":0.045968},{"w":0.5,"ret":0.009757,"risk":0.041783},{"w":0.25,"ret":0.009478,"risk":0.039628},{"w":0.0,"ret":0.009199,"risk":0.039834}],"rho2":[{"w":1.0,"ret":0.010316,"risk":0.051691},{"w":0.75,"ret":0.010037,"risk":0.041912},{"w":0.5,"ret":0.009757,"risk":0.035645},{"w":0.25,"ret":0.009478,"risk":0.034842},{"w":0.0,"ret":0.009199,"risk":0.039834}],"rho3":[{"w":1.0,"ret":0.010316,"risk":0.051691},{"w":0.75,"ret":0.010037,"risk":0.034872},{"w":0.5,"ret":0.009757,"risk":0.02345},{"w":0.25,"ret":0.009478,"risk":0.025951},{"w":0.0,"ret":0.009199,"risk":0.039834}]},"check_ret_vgt":[-0.011127,0.018006,-0.129404],"check_ret_vht":[0.010722,0.044351,-0.039897]},{"grupo":4,"start":"2006-07","end":"2018-06","rho2":0.25,"rho3":-0.4,"mu_vgt":0.011923,"mu_vht":0.009554,"s_vgt":0.05164,"s_vht":0.040158,"rho":0.672912,"tables":{"hist":[{"w":1.0,"ret":0.011923,"risk":0.05164},{"w":0.75,"ret":0.011331,"risk":0.046088},{"w":0.5,"ret":0.010738,"risk":0.042042},{"w":0.25,"ret":0.010146,"risk":0.039963},{"w":0.0,"ret":0.009554,"risk":0.040158}],"rho2":[{"w":1.0,"ret":0.011923,"risk":0.05164},{"w":0.75,"ret":0.011331,"risk":0.04237},{"w":0.5,"ret":0.010738,"risk":0.036456},{"w":0.25,"ret":0.010146,"risk":0.035612},{"w":0.0,"ret":0.009554,"risk":0.040158}],"rho3":[{"w":1.0,"ret":0.011923,"risk":0.05164},{"w":0.75,"ret":0.011331,"risk":0.035913},{"w":0.5,"ret":0.010738,"risk":0.025595},{"w":0.25,"ret":0.010146,"risk":0.027617},{"w":0.0,"ret":0.009554,"risk":0.040158}]},"check_ret_vgt":[0.075796,-0.013017,-0.01308],"check_ret_vht":[0.027916,-0.04028,0.060652]},{"grupo":5,"start":"2007-01","end":"2018-12","rho2":0.3,"rho3":-0.3,"mu_vgt":0.010115,"mu_vht":0.009133,"s_vgt":0.052891,"s_vht":0.042191,"rho":0.685151,"tables":{"hist":[{"w":1.0,"ret":0.010115,"risk":0.052891},{"w":0.75,"ret":0.00987,"risk":0.04752},{"w":0.5,"ret":0.009624,"risk":0.04369},{"w":0.25,"ret":0.009378,"risk":0.041827},{"w":0.0,"ret":0.009133,"risk":0.042191}],"rho2":[{"w":1.0,"ret":0.010115,"risk":0.052891},{"w":0.75,"ret":0.00987,"risk":0.043999},{"w":0.5,"ret":0.009624,"risk":0.038459},{"w":0.25,"ret":0.009378,"risk":0.037778},{"w":0.0,"ret":0.009133,"risk":0.042191}],"rho3":[{"w":1.0,"ret":0.010115,"risk":0.052891},{"w":0.75,"ret":0.00987,"risk":0.037865},{"w":0.5,"ret":0.009624,"risk":0.028454},{"w":0.25,"ret":0.009378,"risk":0.030415},{"w":0.0,"ret":0.009133,"risk":0.042191}]},"check_ret_vgt":[-0.022121,-0.129404,-0.024549],"check_ret_vht":[-0.020228,-0.039897,-0.000531]},{"grupo":6,"start":"2007-07","end":"2019-06","rho2":0.35,"rho3":-0.8,"mu_vgt":0.011449,"mu_vht":0.00988,"s_vgt":0.054481,"s_vht":0.042219,"rho":0.681,"tables":{"hist":[{"w":1.0,"ret":0.011449,"risk":0.054481},{"w":0.75,"ret":0.011057,"risk":0.048666},{"w":0.5,"ret":0.010665,"risk":0.044394},{"w":0.25,"ret":0.010272,"risk":0.042137},{"w":0.0,"ret":0.00988,"risk":0.042219}],"rho2":[{"w":1.0,"ret":0.011449,"risk":0.054481},{"w":0.75,"ret":0.011057,"risk":0.045639},{"w":0.5,"ret":0.010665,"risk":0.039877},{"w":0.25,"ret":0.010272,"risk":0.038601},{"w":0.0,"ret":0.00988,"risk":0.042219}],"rho3":[{"w":1.0,"ret":0.011449,"risk":0.054481},{"w":0.75,"ret":0.011057,"risk":0.03303},{"w":0.5,"ret":0.010665,"risk":0.016359},{"w":0.25,"ret":0.010272,"risk":0.022318},{"w":0.0,"ret":0.00988,"risk":0.042219}]},"check_ret_vgt":[0.028838,-0.01308,0.092532],"check_ret_vht":[0.029363,0.060652,0.058874]},{"grupo":7,"start":"2008-01","end":"2019-12","rho2":0.1,"rho3":-0.6,"mu_vgt":0.013039,"mu_vht":0.010605,"s_vgt":0.052694,"s_vht":0.04224,"rho":0.688157,"tables":{"hist":[{"w":1.0,"ret":0.013039,"risk":0.052694},{"w":0.75,"ret":0.012431,"risk":0.047411},{"w":0.5,"ret":0.011822,"risk":0.043659},{"w":0.25,"ret":0.011213,"risk":0.041852},{"w":0.0,"ret":0.010605,"risk":0.04224}],"rho2":[{"w":1.0,"ret":0.013039,"risk":0.052694},{"w":0.75,"ret":0.012431,"risk":0.041915},{"w":0.5,"ret":0.011822,"risk":0.035377},{"w":0.25,"ret":0.011213,"risk":0.035506},{"w":0.0,"ret":0.010605,"risk":0.04224}],"rho3":[{"w":1.0,"ret":0.013039,"risk":0.052694},{"w":0.75,"ret":0.012431,"risk":0.034243},{"w":0.5,"ret":0.011822,"risk":0.021737},{"w":0.25,"ret":0.011213,"risk":0.026007},{"w":0.0,"ret":0.010605,"risk":0.04224}]},"check_ret_vgt":[-0.029507,-0.024549,-0.077581],"check_ret_vht":[-0.021588,-0.000531,0.031714]},{"grupo":8,"start":"2008-07","end":"2020-06","rho2":0.15,"rho3":-0.5,"mu_vgt":0.014111,"mu_vht":0.010884,"s_vgt":0.054462,"s_vht":0.043743,"rho":0.710096,"tables":{"hist":[{"w":1.0,"ret":0.014111,"risk":0.054462},{"w":0.75,"ret":0.013304,"risk":0.049218},{"w":0.5,"ret":0.012497,"risk":0.045451},{"w":0.25,"ret":0.011691,"risk":0.043544},{"w":0.0,"ret":0.010884,"risk":0.043743}],"rho2":[{"w":1.0,"ret":0.014111,"risk":0.054462},{"w":0.75,"ret":0.013304,"risk":0.043841},{"w":0.5,"ret":0.012497,"risk":0.037398},{"w":0.25,"ret":0.011691,"risk":0.03736},{"w":0.0,"ret":0.010884,"risk":0.043743}],"rho3":[{"w":1.0,"ret":0.014111,"risk":0.054462},{"w":0.75,"ret":0.013304,"risk":0.036625},{"w":0.5,"ret":0.012497,"risk":0.024986},{"w":0.25,"ret":0.011691,"risk":0.028549},{"w":0.0,"ret":0.010884,"risk":0.043743}]},"check_ret_vgt":[0.026312,0.092532,0.071979],"check_ret_vht":[0.018823,0.058874,0.009754]},{"grupo":9,"start":"2009-01","end":"2020-12","rho2":0.2,"rho3":-0.4,"mu_vgt":0.018835,"mu_vht":0.013377,"s_vgt":0.051295,"s_vht":0.041677,"rho":0.677596,"tables":{"hist":[{"w":1.0,"ret":0.018835,"risk":0.051295},{"w":0.75,"ret":0.01747,"risk":0.046171},{"w":0.5,"ret":0.016106,"risk":0.042618},{"w":0.25,"ret":0.014741,"risk":0.041045},{"w":0.0,"ret":0.013377,"risk":0.041677}],"rho2":[{"w":1.0,"ret":0.018835,"risk":0.051295},{"w":0.75,"ret":0.01747,"risk":0.04182},{"w":0.5,"ret":0.016106,"risk":0.036136},{"w":0.25,"ret":0.014741,"risk":0.036081},{"w":0.0,"ret":0.013377,"risk":0.041677}],"rho3":[{"w":1.0,"ret":0.018835,"risk":0.051295},{"w":0.75,"ret":0.01747,"risk":0.035608},{"w":0.5,"ret":0.016106,"risk":0.025777},{"w":0.25,"ret":0.014741,"risk":0.02865},{"w":0.0,"ret":0.013377,"risk":0.041677}]},"check_ret_vgt":[-0.040427,-0.077581,0.045433],"check_ret_vht":[-0.117987,0.031714,0.025455]},{"grupo":10,"start":"2009-07","end":"2021-06","rho2":0.25,"rho3":-0.7,"mu_vgt":0.017164,"mu_vht":0.013393,"s_vgt":0.049479,"s_vht":0.039794,"rho":0.685486,"tables":{"hist":[{"w":1.0,"ret":0.017164,"risk":0.049479},{"w":0.75,"ret":0.016221,"risk":0.044522},{"w":0.5,"ret":0.015278,"risk":0.041022},{"w":0.25,"ret":0.014336,"risk":0.039369},{"w":0.0,"ret":0.013393,"risk":0.039794}],"rho2":[{"w":1.0,"ret":0.017164,"risk":0.049479},{"w":0.75,"ret":0.016221,"risk":0.040751},{"w":0.5,"ret":0.015278,"risk":0.035413},{"w":0.25,"ret":0.014336,"risk":0.035048},{"w":0.0,"ret":0.013393,"risk":0.039794}],"rho3":[{"w":1.0,"ret":0.017164,"risk":0.049479},{"w":0.75,"ret":0.016221,"risk":0.030971},{"w":0.5,"ret":0.015278,"risk":0.017855},{"w":0.25,"ret":0.014336,"risk":0.022954},{"w":0.0,"ret":0.013393,"risk":0.039794}]},"check_ret_vgt":[0.025151,0.071979,-0.001419],"check_ret_vht":[0.021306,0.009754,-0.038971]},{"grupo":11,"start":"2010-01","end":"2021-12","rho2":0.3,"rho3":-0.3,"mu_vgt":0.017568,"mu_vht":0.013098,"s_vgt":0.049312,"s_vht":0.040297,"rho":0.701828,"tables":{"hist":[{"w":1.0,"ret":0.017568,"risk":0.049312},{"w":0.75,"ret":0.016451,"risk":0.044635},{"w":0.5,"ret":0.015333,"risk":0.041367},{"w":0.25,"ret":0.014216,"risk":0.039855},{"w":0.0,"ret":0.013098,"risk":0.040297}],"rho2":[{"w":1.0,"ret":0.017568,"risk":0.049312},{"w":0.75,"ret":0.016451,"risk":0.041144},{"w":0.5,"ret":0.015333,"risk":0.036221},{"w":0.25,"ret":0.014216,"risk":0.035902},{"w":0.0,"ret":0.013098,"risk":0.040297}],"rho3":[{"w":1.0,"ret":0.017568,"risk":0.049312},{"w":0.75,"ret":0.016451,"risk":0.035295},{"w":0.5,"ret":0.015333,"risk":0.026755},{"w":0.25,"ret":0.014216,"risk":0.029015},{"w":0.0,"ret":0.013098,"risk":0.040297}]},"check_ret_vgt":[0.045059,0.045433,0.087695],"check_ret_vht":[0.005327,0.025455,0.059836]},{"grupo":12,"start":"2010-07","end":"2022-06","rho2":0.35,"rho3":-0.8,"mu_vgt":0.014907,"mu_vht":0.012786,"s_vgt":0.050827,"s_vht":0.040797,"rho":0.715316,"tables":{"hist":[{"w":1.0,"ret":0.014907,"risk":0.050827},{"w":0.75,"ret":0.014376,"risk":0.045971},{"w":0.5,"ret":0.013846,"risk":0.042468},{"w":0.25,"ret":0.013316,"risk":0.040668},{"w":0.0,"ret":0.012786,"risk":0.040797}],"rho2":[{"w":1.0,"ret":0.014907,"risk":0.050827},{"w":0.75,"ret":0.014376,"risk":0.04277},{"w":0.5,"ret":0.013846,"risk":0.037746},{"w":0.25,"ret":0.013316,"risk":0.037011},{"w":0.0,"ret":0.012786,"risk":0.040797}],"rho3":[{"w":1.0,"ret":0.014907,"risk":0.050827},{"w":0.75,"ret":0.014376,"risk":0.030579},{"w":0.5,"ret":0.013846,"risk":0.015248},{"w":0.25,"ret":0.013316,"risk":0.021808},{"w":0.0,"ret":0.012786,"risk":0.040797}]},"check_ret_vgt":[-0.06922,-0.001419,0.005237],"check_ret_vht":[-0.020502,-0.038971,0.006243]},{"grupo":13,"start":"2011-01","end":"2022-12","rho2":0.1,"rho3":-0.5,"mu_vgt":0.013512,"mu_vht":0.012315,"s_vgt":0.052706,"s_vht":0.041296,"rho":0.71301,"tables":{"hist":[{"w":1.0,"ret":0.013512,"risk":0.052706},{"w":0.75,"ret":0.013213,"risk":0.047446},{"w":0.5,"ret":0.012913,"risk":0.043552},{"w":0.25,"ret":0.012614,"risk":0.04141},{"w":0.0,"ret":0.012315,"risk":0.041296}],"rho2":[{"w":1.0,"ret":0.013512,"risk":0.052706},{"w":0.75,"ret":0.013213,"risk":0.041843},{"w":0.5,"ret":0.012913,"risk":0.035066},{"w":0.25,"ret":0.012614,"risk":0.03485},{"w":0.0,"ret":0.012315,"risk":0.041296}],"rho3":[{"w":1.0,"ret":0.013512,"risk":0.052706},{"w":0.75,"ret":0.013213,"risk":0.035512},{"w":0.5,"ret":0.012913,"risk":0.024014},{"w":0.25,"ret":0.012614,"risk":0.026922},{"w":0.0,"ret":0.012315,"risk":0.041296}]},"check_ret_vgt":[0.024397,0.087695,0.034342],"check_ret_vht":[0.034744,0.059836,0.093794]},{"grupo":14,"start":"2011-07","end":"2023-06","rho2":0.2,"rho3":-0.6,"mu_vgt":0.015981,"mu_vht":0.011684,"s_vgt":0.053797,"s_vht":0.041361,"rho":0.679677,"tables":{"hist":[{"w":1.0,"ret":0.015981,"risk":0.053797},{"w":0.75,"ret":0.014907,"risk":0.047979},{"w":0.5,"ret":0.013832,"risk":0.043674},{"w":0.25,"ret":0.012758,"risk":0.041356},{"w":0.0,"ret":0.011684,"risk":0.041361}],"rho2":[{"w":1.0,"ret":0.015981,"risk":0.053797},{"w":0.75,"ret":0.014907,"risk":0.043609},{"w":0.5,"ret":0.013832,"risk":0.037064},{"w":0.25,"ret":0.012758,"risk":0.036195},{"w":0.0,"ret":0.011684,"risk":0.041361}],"rho3":[{"w":1.0,"ret":0.015981,"risk":0.053797},{"w":0.75,"ret":0.014907,"risk":0.035131},{"w":0.5,"ret":0.013832,"risk":0.021993},{"w":0.25,"ret":0.012758,"risk":0.025348},{"w":0.0,"ret":0.011684,"risk":0.041361}]},"check_ret_vgt":[-0.064181,0.005237,0.054473],"check_ret_vht":[-0.033415,0.006243,0.076396]},{"grupo":15,"start":"2012-01","end":"2023-12","rho2":0.3,"rho3":-0.4,"mu_vgt":0.016253,"mu_vht":0.011538,"s_vgt":0.053506,"s_vht":0.041234,"rho":0.676515,"tables":{"hist":[{"w":1.0,"ret":0.016253,"risk":0.053506},{"w":0.75,"ret":0.015074,"risk":0.047711},{"w":0.5,"ret":0.013895,"risk":0.04344},{"w":0.25,"ret":0.012717,"risk":0.041171},{"w":0.0,"ret":0.011538,"risk":0.041234}],"rho2":[{"w":1.0,"ret":0.016253,"risk":0.053506},{"w":0.75,"ret":0.015074,"risk":0.044326},{"w":0.5,"ret":0.013895,"risk":0.038363},{"w":0.25,"ret":0.012717,"risk":0.037196},{"w":0.0,"ret":0.011538,"risk":0.041234}],"rho3":[{"w":1.0,"ret":0.016253,"risk":0.053506},{"w":0.75,"ret":0.015074,"risk":0.037225},{"w":0.5,"ret":0.013895,"risk":0.026448},{"w":0.25,"ret":0.012717,"risk":0.028361},{"w":0.0,"ret":0.011538,"risk":0.041234}]},"check_ret_vgt":[0.069757,0.034342,-0.012816],"check_ret_vht":[0.016782,0.093794,0.030348]}];
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+// Support ?seccion=X&grupo=Y (from hub) or ?grupo=N (legacy)
+const _params = new URLSearchParams(location.search);
+const _sec  = parseInt(_params.get('seccion') || '0');
+const _grp  = parseInt(_params.get('grupo')   || '1');
+let gNum = _grp;
+
+async function resolveGroupAndStart() {
+  if (_sec > 0) {
+    try {
+      const snap = await firebase.firestore().collection('minicase_hub').doc('config').get();
+      if (snap.exists) {
+        const secs = snap.data().minicases[0].sections || [];
+        let offset = 0;
+        for (let s = 0; s < _sec - 1 && s < secs.length; s++) offset += (secs[s].groups || 5);
+        gNum = ((offset + _grp - 1) % GROUPS.length) + 1;
+      } else { gNum = ((_sec-1)*5 + _grp - 1) % GROUPS.length + 1; }
+    } catch(e) { gNum = ((_sec-1)*5 + _grp - 1) % GROUPS.length + 1; }
+  }
+  G = GROUPS.find(g => g.grupo === gNum);
+  A = ANSWERS.find(a => a.grupo === gNum);
+  // Check existing submission & professor's resubmit setting
+  try {
+    const docId = `mc1_sec${_sec}_grp${_grp}`;
+    const existSnap = await firebase.firestore().collection('minicase_submissions').doc(docId).get();
+    if(existSnap.exists){
+      _submitted = true;
+      let allowResubmit = false;
+      try {
+        const cfgSnap2 = await firebase.firestore().collection('minicase_hub').doc('config').get();
+        if(cfgSnap2.exists){
+          const mc = (cfgSnap2.data().minicases||[])[0]||{};
+          allowResubmit = mc.allowResubmit === true;
+        }
+      } catch(e2){}
+      if(!allowResubmit){
+        _resubmitBlocked = true;
+        const banner = document.getElementById('alreadySubmittedBanner');
+        if(banner) banner.style.display = 'block';
+        const sbtn = document.getElementById('submitBtn');
+        if(sbtn){ sbtn.disabled = true; sbtn.textContent = 'Already Submitted'; }
+      }
+    }
+  } catch(e){}
+  initApp();
+}
+
+function downloadExcel() {
+  const G = GROUPS.find(g => g.grupo === gNum);
+  if (!G || typeof XLSX === 'undefined') { alert('Loading… try again in a second.'); return; }
+  const wb = XLSX.utils.book_new();
+  // Data sheet
+  const dRows = [['Mini Case 1 — Window: '+G.start+' to '+G.end],['FINA 402 — Investments | USD'],['Date','VGT (Info Tech)','VHT (Health Care)']];
+  G.dates.forEach((d,i) => dRows.push([d, G.vgt[i], G.vht[i]]));
+  dRows.push(['Source: Vanguard ETF historical NAV prices. For academic use only.']);
+  const ws1 = XLSX.utils.aoa_to_sheet(dRows);
+  ws1['!cols'] = [{wch:12},{wch:18},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Data');
+  // Returns sheet
+  const n = G.dates.length;
+  const rRows = [['Step 1: Monthly Returns — enter formula Rt=(Pt-Pt-1)/Pt-1 in columns C and D'],['Date','Month #','VGT Return','VHT Return']];
+  for (let i=1; i<n; i++) rRows.push([G.dates[i], i, null, null]);
+  rRows.push([]);
+  rRows.push(['Average Monthly Return','','=AVERAGE(C3:C'+(n+1)+')','=AVERAGE(D3:D'+(n+1)+')']);
+  rRows.push(['Monthly Std Dev (Risk)','','=STDEV(C3:C'+(n+1)+')','=STDEV(D3:D'+(n+1)+')']);
+  rRows.push(['Correlation ρ (VGT,VHT)','','=CORREL(C3:C'+(n+1)+',D3:D'+(n+1)+')','']);
+  const ws2 = XLSX.utils.aoa_to_sheet(rRows);
+  ws2['!cols'] = [{wch:12},{wch:10},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Returns');
+  const tag = _sec > 0 ? 'Sec'+_sec+'_Grp'+_grp : 'Group'+gNum;
+  XLSX.writeFile(wb, 'MC1_Data_'+tag+'.xlsx');
+}
+
+// ── GLOBALS ──
+let G, A;
+let s1ok=false, s2ok=false, s3ok=false;
+let userRho = null;
+let checkIdx = 11;
+let checkDate = '';
+const WEIGHTS = [[1.0,0.0],[.75,.25],[.5,.5],[.25,.75],[0,1.0]];
+const LABELS  = ['P1: 100% VGT / 0% VHT','P2: 75% VGT / 25% VHT',
+                 'P3: 50% VGT / 50% VHT','P4: 25% VGT / 75% VHT','P5: 0% VGT / 100% VHT'];
+
+
+function initApp() {
+try {
+document.getElementById('groupNum').textContent = gNum;
+  if(_sec>0){const gb=document.getElementById('groupNum');if(gb&&gb.parentElement)gb.parentElement.innerHTML='Sec '+_sec+' &middot; Grp '+_grp;}
+document.getElementById('windowRange').textContent = G.start + ' to ' + G.end;
+document.getElementById('windowMonths').textContent = G.dates.length + ' months';
+// Team member inputs
+const tg = document.getElementById('teamGrid');
+for(let i=1;i<=5;i++){
+  const inp = document.createElement('input');
+  inp.className='team-input'; inp.placeholder='Student '+ i + ' name'; inp.id='tm'+i;
+  tg.appendChild(inp);
+}
+
+// Spot check month
+checkIdx = 11;
+checkDate = G.dates[checkIdx+1];
+document.getElementById('checkMonth').textContent = checkDate;
+
+renderChart();
+} catch(err) {
+  console.error('initApp error:', err);
+  const errDiv = document.createElement('div');
+  errDiv.style.cssText='background:#fee;border:2px solid red;padding:12px;margin:12px;border-radius:8px;font-family:monospace;font-size:13px';
+  errDiv.textContent='⚠ Page init error: '+err.message+'. Please reload.';
+  document.querySelector('main').prepend(errDiv);
+}
+} // end initApp
+
+// buildTable removed — replaced by interactive frontier
+
+// ═══════════════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════════════
+function renderChart(){
+  const canvas = document.getElementById('priceChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const PAD = {top:20, right:30, bottom:45, left:55};
+  const cW = W-PAD.left-PAD.right, cH = H-PAD.top-PAD.bottom;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+
+  // Normalize prices to 100
+  const n = G.vgt.length;
+  const vgt0 = G.vgt[0], vht0 = G.vht[0];
+  const vgtN = G.vgt.map(p=>p/vgt0*100);
+  const vhtN = G.vht.map(p=>p/vht0*100);
+  const allVals = [...vgtN,...vhtN];
+  const minV = Math.min(...allVals)*0.97, maxV = Math.max(...allVals)*1.03;
+
+  const xScale = i => PAD.left + (i/(n-1))*cW;
+  const yScale = v => PAD.top + cH - (v-minV)/(maxV-minV)*cH;
+
+  // Grid lines
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+  const gridVals = []; let gv = Math.ceil(minV/25)*25;
+  while(gv<=maxV){gridVals.push(gv);gv+=25;}
+  gridVals.forEach(v=>{
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(PAD.left,y); ctx.lineTo(PAD.left+cW,y); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(0),PAD.left-6,y+4);
+  });
+
+  // Year labels on x-axis
+  const startYear = parseInt(G.start.split('-')[0]);
+  const endYear = parseInt(G.end.split('-')[0]);
+  ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+  for(let yr=startYear;yr<=endYear;yr+=2){
+    const monthsIn = (yr - startYear)*12;
+    if(monthsIn>=0 && monthsIn<n){
+      const x = xScale(monthsIn);
+      ctx.beginPath(); ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+      ctx.moveTo(x,PAD.top); ctx.lineTo(x,PAD.top+cH); ctx.stroke();
+      ctx.fillStyle='#94a3b8';
+      ctx.fillText(yr, x, PAD.top+cH+18);
+    }
+  }
+
+  // Draw VHT (gold)
+  ctx.beginPath(); ctx.strokeStyle='#c49a3c'; ctx.lineWidth=2.5;
+  vhtN.forEach((v,i)=>{
+    const x=xScale(i), y=yScale(v);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }); ctx.stroke();
+
+  // Draw VGT (blue)
+  ctx.beginPath(); ctx.strokeStyle='#2563eb'; ctx.lineWidth=2.5;
+  vgtN.forEach((v,i)=>{
+    const x=xScale(i), y=yScale(v);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }); ctx.stroke();
+
+  // Legend
+  const lx = PAD.left+cW-120, ly = PAD.top+8;
+  ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(lx-8,ly-6,130,42);
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1; ctx.strokeRect(lx-8,ly-6,130,42);
+  ctx.strokeStyle='#2563eb'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(lx,ly+6); ctx.lineTo(lx+22,ly+6); ctx.stroke();
+  ctx.fillStyle='#1a1a2e'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('VGT (Tech)',lx+26,ly+10);
+  ctx.strokeStyle='#c49a3c'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(lx,ly+24); ctx.lineTo(lx+22,ly+24); ctx.stroke();
+  ctx.fillText('VHT (Health)',lx+26,ly+28);
+
+  // Y-axis label
+  ctx.save(); ctx.translate(14,H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Normalized Price (Base=100)',0,0); ctx.restore();
+
+  // Watermark (subtle)
+  ctx.save(); ctx.globalAlpha=0.06; ctx.font='bold 80px sans-serif';
+  ctx.fillStyle='#002147'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.translate(W/2,H/2); ctx.rotate(-20*Math.PI/180);
+  ctx.fillText('GROUP '+gNum,0,0); ctx.restore();
+}
+// renderChart moved to initApp()
+
+// ═══════════════════════════════════════════════════
+// VALIDATION HELPERS
+// ═══════════════════════════════════════════════════
+function near(a, b, tol=0.005){ return Math.abs(a-b) <= tol; }
+function nearRel(a, b, pct=0.02){ return Math.abs(a-b) <= Math.abs(b)*pct + 1e-6; }
+
+function showFB(id, ok, msg){
+  const el = document.getElementById(id);
+  el.className = 'feedback ' + (ok?'ok':'err');
+  el.innerHTML = (ok?'✅ ':'❌ ') + msg;
+  el.style.display='flex';
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 1
+// ═══════════════════════════════════════════════════
+function validateStep1(){
+  const val = parseFloat(document.getElementById('s1_input').value.trim()) / 100;
+  const expected = A.check_ret_vgt[1]; // index 11
+  if(isNaN(val)){ showFB('s1_fb',false,'Please enter a numeric value.'); return; }
+  const ok = near(val, expected, 0.005);
+  const inp = document.getElementById('s1_input');
+  inp.className = 'num-input ' + (ok?'ok':'err');
+  if(ok){
+    s1ok=true;
+    showFB('s1_fb',true,'Correct! Your return formula is working. Proceed to Step 2.');
+  } else {
+    showFB('s1_fb',false,`Not quite. Check your formula for ${checkDate}. Make sure you are using the correct row.`);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 2
+// ═══════════════════════════════════════════════════
+function validateStep2(){
+  // Inputs are in % (e.g. 0.90), answers stored as decimals (e.g. 0.009)
+  // Convert: userInput / 100 = decimal
+  const mu1 = parseFloat(document.getElementById('s2_mu1').value) / 100;
+  const s1  = parseFloat(document.getElementById('s2_s1').value)  / 100;
+  const mu2 = parseFloat(document.getElementById('s2_mu2').value) / 100;
+  const s2  = parseFloat(document.getElementById('s2_s2').value)  / 100;
+  if([mu1,s1,mu2,s2].some(isNaN)){
+    showFB('s2_fb',false,'Please fill in all four fields before verifying.'); return;
+  }
+  const checks = [
+    {val:mu1, exp:A.mu_vgt, id:'s2_mu1', lbl:'Avg Return VGT'},
+    {val:s1,  exp:A.s_vgt,  id:'s2_s1',  lbl:'Std Dev VGT'},
+    {val:mu2, exp:A.mu_vht, id:'s2_mu2', lbl:'Avg Return VHT'},
+    {val:s2,  exp:A.s_vht,  id:'s2_s2',  lbl:'Std Dev VHT'},
+  ];
+  let allOk = true;
+  checks.forEach(c=>{
+    const ok = nearRel(c.val, c.exp, 0.02);
+    document.getElementById(c.id).className = 'num-input '+(ok?'ok':'err');
+    if(!ok) allOk=false;
+  });
+  if(allOk){
+    s2ok=true;
+    showFB('s2_fb',true,'All four statistics are correct! Proceed to Step 3.');
+  } else {
+    showFB('s2_fb',false,'One or more values are off. Double-check your Excel formulas and that you used only your group\'s data window.');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 3 — unlocks portfolio
+// ═══════════════════════════════════════════════════
+function validateStep3(){
+  const val = parseFloat(document.getElementById('s3_rho').value.trim());
+  if(isNaN(val)){ showFB('s3_fb',false,'Please enter a numeric value.'); return; }
+  const ok = near(val, A.rho, 0.01);
+  document.getElementById('s3_rho').className = 'num-input '+(ok?'ok':'err');
+  if(ok){
+    s3ok=true; userRho=val;
+    showFB('s3_fb',true,`Correct! ρ ≈ ${val.toFixed(4)}. Portfolio analysis is now unlocked.`);
+    // Unlock
+    setTimeout(()=>{
+      const wrapper = document.getElementById('portfolioWrapper');
+      const overlay = document.getElementById('lockOverlay');
+      overlay.style.transition='opacity .5s';
+      overlay.style.opacity='0';
+      setTimeout(()=>{
+        wrapper.classList.remove('section-locked');
+        overlay.remove();
+        wrapper.classList.add('fade-in');
+      },500);
+    },600);
+  } else {
+    showFB('s3_fb',false,'Not quite. Check your CORREL() formula and make sure you selected only the returns columns for your data window.');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// Q4 COMPUTATION GATE
+// ═══════════════════════════════════════════════════
+function validateQ4(){
+  const retVal  = parseFloat((document.getElementById('q4_ret').value||'').trim());
+  const riskVal = parseFloat((document.getElementById('q4_risk').value||'').trim());
+  if(isNaN(retVal)||isNaN(riskVal)){
+    showFB('q4_fb',false,'Please enter both Return and Risk as percentages (numbers only).');
+    return;
+  }
+  // Compute expected answer from group stats (stored as decimals → convert to %)
+  const p      = pfStats(0.5, A.mu_vgt, A.mu_vht, A.s_vgt, A.s_vht, A.rho);
+  const retPct  = p.ret  * 100;
+  const riskPct = p.risk * 100;
+  const retOk   = nearRel(retVal,  retPct,  0.02);
+  const riskOk  = nearRel(riskVal, riskPct, 0.02);
+  if(retOk && riskOk){
+    showFB('q4_fb',true,
+      `✓ Correct! Return ≈ ${retPct.toFixed(3)} %/month, Risk ≈ ${riskPct.toFixed(3)} %/month. Charts unlocked!`);
+    document.getElementById('q4_ret').className  = 'num-input ok';
+    document.getElementById('q4_risk').className = 'num-input ok';
+    setTimeout(()=>{
+      const wrapper = document.getElementById('chartsWrapper');
+      const overlay = document.getElementById('chartsLockOverlay');
+      overlay.style.transition = 'opacity .5s';
+      overlay.style.opacity    = '0';
+      setTimeout(()=>{
+        wrapper.classList.remove('section-locked');
+        overlay.remove();
+        wrapper.classList.add('fade-in');
+        setTimeout(initFrontier, 50);
+      }, 500);
+    }, 600);
+  } else {
+    const msgs = [];
+    if(!retOk)  msgs.push('Expected return is not correct — recheck your formula using the avg monthly returns from Q2.');
+    if(!riskOk) msgs.push('Portfolio risk is not correct — recheck the σ formula using your Q2 std devs and Q3 correlation.');
+    showFB('q4_fb', false, msgs.join(' · '));
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// EFFICIENT FRONTIER & PORTFOLIO SLIDER
+// ═══════════════════════════════════════════════════
+
+function pfStats(w, mu1, mu2, s1, s2, rho) {
+  const ret  = w*mu1 + (1-w)*mu2;
+  const vari = w*w*s1*s1 + (1-w)*(1-w)*s2*s2 + 2*w*(1-w)*rho*s1*s2;
+  const risk = Math.sqrt(Math.max(0, vari));
+  return {w, ret, risk};
+}
+
+function findMVP(mu1, mu2, s1, s2, rho) {
+  const den = s1*s1 + s2*s2 - 2*rho*s1*s2;
+  let w = den > 1e-12 ? (s2*s2 - rho*s1*s2) / den : 0.5;
+  w = Math.max(0, Math.min(1, w));
+  return pfStats(w, mu1, mu2, s1, s2, rho);
+}
+
+function frontierPts(mu1, mu2, s1, s2, rho, n=120) {
+  return Array.from({length:n+1}, (_, i) => pfStats(i/n, mu1, mu2, s1, s2, rho));
+}
+
+let _wSlider = 0.5;
+let _frontierReady = false;
+let _submitted = false;
+let _resubmitBlocked = false;
+
+function initFrontier() {
+  if (!A || _frontierReady) return;
+  _frontierReady = true;
+  document.getElementById('leg_rho2').textContent = G.rho2.toFixed(2);
+  document.getElementById('leg_rho3').textContent = G.rho3.toFixed(2);
+
+  const rhoSlider = document.getElementById('rhoSlider');
+  rhoSlider.value = Math.round(A.rho * 100);
+  document.getElementById('rhoSliderVal').textContent = A.rho.toFixed(2);
+  rhoSlider.addEventListener('input', function() {
+    const r = this.value / 100;
+    document.getElementById('rhoSliderVal').textContent = r.toFixed(2);
+    drawFrontierChart(r);
+    updateFrontierReadout(r);
+  });
+
+  const wSlider = document.getElementById('wSlider');
+  wSlider.addEventListener('input', function() {
+    _wSlider = this.value / 100;
+    updatePortfolioCard();
+    drawPortfolioChart();
+  });
+
+  drawFrontierChart(A.rho);
+  updateFrontierReadout(A.rho);
+  updatePortfolioCard();
+  drawPortfolioChart();
+}
+
+function drawFrontierChart(sliderRho) {
+  const canvas = document.getElementById('frontierChart');
+  if (!canvas || !A) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const PAD = {top:32, right:42, bottom:52, left:64};
+  const cW = W-PAD.left-PAD.right, cH = H-PAD.top-PAD.bottom;
+
+  const mu1=A.mu_vgt, mu2=A.mu_vht, s1=A.s_vgt, s2=A.s_vht;
+  const rhos   = [A.rho, G.rho2, G.rho3, sliderRho];
+  const colors = ['#002147','#c49a3c','#e53e3e','#805ad5'];
+  const allPts = rhos.map(r => frontierPts(mu1, mu2, s1, s2, r));
+
+  const allR = allPts.flat().map(p => p.risk*100);
+  const allE = allPts.flat().map(p => p.ret*100);
+  const minX = Math.min(...allR)*0.90, maxX = Math.max(...allR)*1.06;
+  const _minE = Math.min(...allE), _maxE = Math.max(...allE);
+  const _eRange = Math.max(_maxE - _minE, 0.001);
+  const minY = _minE - _eRange * 0.8;
+  const maxY = _maxE + _eRange * 0.5;
+
+  const xS = v => PAD.left + (v-minX)/(maxX-minX)*cW;
+  const yS = v => PAD.top  + cH    - (v-minY)/(maxY-minY)*cH;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const yr=minY+i*(maxY-minY)/4, xr=minX+i*(maxX-minX)/4;
+    ctx.strokeStyle='#e2e8f0';
+    ctx.beginPath(); ctx.moveTo(PAD.left,yS(yr)); ctx.lineTo(PAD.left+cW,yS(yr)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xS(xr),PAD.top); ctx.lineTo(xS(xr),PAD.top+cH); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif';
+    ctx.textAlign='right'; ctx.fillText(yr.toFixed(2)+'%',PAD.left-6,yS(yr)+4);
+    ctx.textAlign='center'; ctx.fillText(xr.toFixed(2)+'%',xS(xr),PAD.top+cH+18);
+  }
+  ctx.fillStyle='#64748b'; ctx.font='bold 12px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Portfolio Risk  σ  (monthly %)',PAD.left+cW/2,H-6);
+  ctx.save(); ctx.translate(15,PAD.top+cH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Portfolio Return (%)',0,0); ctx.restore();
+
+  // Four curves
+  allPts.forEach((pts,ci)=>{
+    const isSlider=ci===3;
+    ctx.beginPath(); ctx.strokeStyle=colors[ci]; ctx.lineWidth=isSlider?2:2.5;
+    ctx.setLineDash(isSlider?[8,5]:[]);
+    pts.forEach((p,i)=>{
+      const x=xS(p.risk*100),y=yS(p.ret*100);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }); ctx.stroke(); ctx.setLineDash([]);
+    // MVP dot
+    const mvp=findMVP(mu1,mu2,s1,s2,rhos[ci]);
+    const mx=xS(mvp.risk*100),my=yS(mvp.ret*100);
+    ctx.beginPath(); ctx.arc(mx,my,isSlider?4:5,0,2*Math.PI);
+    ctx.fillStyle=colors[ci]; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // P1-P5 on historical
+  [1,0.75,0.5,0.25,0].forEach((w,i)=>{
+    const p=pfStats(w,mu1,mu2,s1,s2,A.rho);
+    const x=xS(p.risk*100),y=yS(p.ret*100);
+    ctx.beginPath(); ctx.arc(x,y,4,0,2*Math.PI);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#002147'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#002147'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('P'+(i+1),x,y-9);
+  });
+}
+
+function updateFrontierReadout(rho){
+  const mu1=A.mu_vgt,mu2=A.mu_vht,s1=A.s_vgt,s2=A.s_vht;
+  const mvp=findMVP(mu1,mu2,s1,s2,rho);
+  document.getElementById('ro_rho').textContent  =rho.toFixed(2);
+  document.getElementById('ro_wmvp').textContent =(mvp.w*100).toFixed(1);
+  document.getElementById('ro_ret').textContent  =(mvp.ret*100).toFixed(2);
+  document.getElementById('ro_risk').textContent =(mvp.risk*100).toFixed(2);
+  document.getElementById('frontierReadout').style.display='block';
+}
+
+function updatePortfolioCard(){
+  const w=_wSlider;
+  const mu1=A.mu_vgt,mu2=A.mu_vht,s1=A.s_vgt,s2=A.s_vht;
+  const p=pfStats(w,mu1,mu2,s1,s2,A.rho);
+  const n=pfStats(0.5,mu1,mu2,s1,s2,A.rho);
+  const diff=(n.risk-p.risk)*100;
+  document.getElementById('pw_alloc').textContent=`${(w*100).toFixed(0)}% VGT / ${((1-w)*100).toFixed(0)}% VHT`;
+  document.getElementById('pw_ret').textContent=(p.ret*100).toFixed(2)+'%';
+  document.getElementById('pw_risk').textContent=(p.risk*100).toFixed(2)+'%';
+  const vsEl=document.getElementById('pw_vs');
+  vsEl.textContent=diff>=0?`${diff.toFixed(2)}% less risk`:`${(-diff).toFixed(2)}% more risk`;
+  vsEl.style.color=diff>=0?'#6ee7b7':'#fca5a5';
+}
+
+function drawPortfolioChart(){
+  const canvas=document.getElementById('portfolioChart');
+  if(!canvas||!A)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const PAD={top:32,right:28,bottom:52,left:64};
+  const cW=W-PAD.left-PAD.right,cH=H-PAD.top-PAD.bottom;
+  const mu1=A.mu_vgt,mu2=A.mu_vht,s1=A.s_vgt,s2=A.s_vht;
+
+  // 200 frontier points for smooth curve
+  const pts = frontierPts(mu1,mu2,s1,s2,A.rho,200);
+  const mvp  = findMVP(mu1,mu2,s1,s2,A.rho);
+
+  // Split into efficient (ret >= mvp.ret) and inefficient halves
+  const effPts   = pts.filter(p => p.ret >= mvp.ret - 1e-9);
+  const ineffPts = pts.filter(p => p.ret <  mvp.ret + 1e-9);
+
+  // Axis bounds: zoom to efficient frontier with absolute padding
+  const effR  = effPts.map(p=>p.risk*100), effE = effPts.map(p=>p.ret*100);
+  const minR  = Math.min(...effR), maxR = Math.max(...effR);
+  const minE  = Math.min(...effE), maxE = Math.max(...effE);
+  const rRange = Math.max(maxR-minR, 0.05);
+  const eRange = Math.max(maxE-minE, 0.05);
+  const minX = minR - rRange*0.18;
+  const maxX = maxR + rRange*0.20;
+  const minY = minE - eRange*0.55;
+  const maxY = maxE + eRange*0.35;
+
+  const xS = v => PAD.left+(v-minX)/(maxX-minX)*cW;
+  const yS = v => PAD.top+cH-(v-minY)/(maxY-minY)*cH;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.lineWidth=1; ctx.strokeStyle='#e2e8f0'; ctx.setLineDash([]);
+  for(let i=0;i<=4;i++){
+    const yr=minY+i*(maxY-minY)/4;
+    const xr=minX+i*(maxX-minX)/4;
+    ctx.beginPath(); ctx.moveTo(PAD.left,yS(yr)); ctx.lineTo(PAD.left+cW,yS(yr)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xS(xr),PAD.top); ctx.lineTo(xS(xr),PAD.top+cH); ctx.stroke();
+    ctx.fillStyle='#64748b'; ctx.font='11px sans-serif';
+    ctx.textAlign='right'; ctx.fillText(yr.toFixed(3)+'%',PAD.left-5,yS(yr)+4);
+    ctx.textAlign='center'; ctx.fillText(xr.toFixed(3)+'%',xS(xr),PAD.top+cH+17);
+  }
+
+  // Axis labels
+  ctx.fillStyle='#475569'; ctx.font='bold 12px sans-serif';
+  ctx.textAlign='center'; ctx.fillText('Risk σ (%/month)',PAD.left+cW/2,H-6);
+  ctx.save(); ctx.translate(14,PAD.top+cH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Expected Return (%/month)',0,0); ctx.restore();
+
+  // Inefficient portion — light gray dashed line
+  if(ineffPts.length>1){
+    ctx.beginPath(); ctx.strokeStyle='#cbd5e0'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+    ineffPts.forEach((p,i)=>{
+      const x=xS(p.risk*100),y=yS(p.ret*100);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Efficient frontier — navy, thick, solid
+  ctx.beginPath(); ctx.strokeStyle='#002147'; ctx.lineWidth=3; ctx.setLineDash([]);
+  effPts.forEach((p,i)=>{
+    const x=xS(p.risk*100),y=yS(p.ret*100);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }); ctx.stroke();
+
+  // Pure asset endpoint labels (only if in visible area)
+  const inView = (px,py) => px>=PAD.left&&px<=PAD.left+cW&&py>=PAD.top&&py<=PAD.top+cH;
+  const p100vgt=pfStats(1,mu1,mu2,s1,s2,A.rho);
+  const p100vht=pfStats(0,mu1,mu2,s1,s2,A.rho);
+  [[p100vgt,'100% VGT','#002147'],[p100vht,'100% VHT','#64748b']].forEach(([p,lbl,col])=>{
+    const px=xS(p.risk*100),py=yS(p.ret*100);
+    if(!inView(px,py))return;
+    ctx.beginPath(); ctx.arc(px,py,4,0,2*Math.PI);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.fillStyle=col; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(lbl,px+7,py+4);
+  });
+
+  // MVP dot — red
+  const mx=xS(mvp.risk*100),my=yS(mvp.ret*100);
+  ctx.beginPath(); ctx.arc(mx,my,6,0,2*Math.PI);
+  ctx.fillStyle='#e53e3e'; ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#e53e3e'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('MVP',mx+9,my+4);
+
+  // Current portfolio gold dot — draw even if slightly outside efficient range
+  const cur=pfStats(_wSlider,mu1,mu2,s1,s2,A.rho);
+  const cx_=xS(cur.risk*100),cy_=yS(cur.ret*100);
+  ctx.beginPath(); ctx.arc(cx_,cy_,10,0,2*Math.PI);
+  ctx.fillStyle='#c49a3c'; ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
+}
+// ═══════════════════════════════════════════════════
+// SUBMISSION
+// ═══════════════════════════════════════════════════
+async function submitToFirebase(){
+  if(_submitted && _resubmitBlocked){
+    alert('This group has already submitted. Contact your professor to allow resubmission.');
+    return;
+  }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving…';
+  const team = [1,2,3,4,5].map(i=>document.getElementById('tm'+i).value.trim()).filter(Boolean);
+  const rhoEl = document.getElementById('rhoSlider');
+  const data = {
+    section:     _sec,
+    group:       _grp,
+    gNum,
+    team,
+    submittedAt: new Date().toISOString(),
+    step1:  { returnVal: document.getElementById('s1_input').value },
+    step2:  {
+      mu_vgt: document.getElementById('s2_mu1').value,
+      s_vgt:  document.getElementById('s2_s1').value,
+      mu_vht: document.getElementById('s2_mu2').value,
+      s_vht:  document.getElementById('s2_s2').value
+    },
+    step3:  { rho: document.getElementById('s3_rho').value },
+    q4:     {
+      ret:  document.getElementById('q4_ret').value,
+      risk: document.getElementById('q4_risk').value
+    },
+    q1:     { rhoSlider: rhoEl ? (rhoEl.value/100).toFixed(2) : '—' },
+    q2:     {
+      wSlider:  Math.round(_wSlider*100),
+      mvpAlloc: document.getElementById('mvp_answer').value,
+      mvpRisk:  document.getElementById('mvp_risk_answer').value
+    },
+    q3:     {
+      a: document.getElementById('q3a').value,
+      b: document.getElementById('q3b').value,
+      c: document.getElementById('q3c').value,
+      d: document.getElementById('q3d').value,
+      e: (document.getElementById('q3e')||{}).value||''
+    }
+  };
+  try {
+    const docId = `mc1_sec${_sec}_grp${_grp}`;
+    await firebase.firestore().collection('minicase_submissions').doc(docId).set(data);
+    _submitted      = true;
+    _resubmitBlocked = true;
+    document.getElementById('submitResult').innerHTML = `
+      <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;padding:20px;text-align:center;color:#065f46">
+        <div style="font-size:32px;margin-bottom:8px">✅</div>
+        <strong style="font-size:16px">Submitted successfully!</strong><br>
+        <span style="font-size:13px;opacity:.75">Saved on ${new Date().toLocaleString('en-US',{timeZone:'America/Los_Angeles'})}</span>
+      </div>`;
+    btn.style.display = 'none';
+  } catch(e){
+    btn.disabled    = false;
+    btn.textContent = '📤 SUBMIT';
+    document.getElementById('submitResult').innerHTML =
+      `<div style="color:#c53030;background:#fff5f5;border:1px solid #feb2b2;border-radius:6px;padding:12px;font-size:13px">
+         ⚠️ Save failed: ${e.message}</div>`;
+  }
+}
+
+
+// Update group badge for section display
+function updateBadge(){
+  if(_sec>0){
+    const el=document.getElementById('groupNum');
+    if(el){el.parentElement.innerHTML='Sec '+_sec+' &middot; Grp '+_grp;}
+  }
+}
+
+resolveGroupAndStart();
+</script>
+</body>
+</html>
