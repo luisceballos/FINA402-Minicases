@@ -237,6 +237,15 @@ input:checked+.tslider:before{transform:translateX(18px);}
         </div>
         <div id="pw-change-msg"></div>
       </div>
+      <div class="pw-change" style="margin-top:12px;">
+        <h4>🤖 AI Agent — Anthropic API Key</h4>
+        <div style="font-size:.78rem;color:#6b7280;margin-bottom:8px;">This key is stored in Firebase and used by student minicases to power the AI feedback agent. Students never see the key.</div>
+        <div class="pw-row">
+          <input type="password" id="anthropic-key-input" placeholder="sk-ant-…" style="flex:1;font-family:monospace;">
+          <button onclick="toggleAnthrKey()">👁</button>
+        </div>
+        <div id="anthropic-key-msg" style="font-size:.8rem;margin-top:6px;display:none;"></div>
+      </div>
       <div id="mc-settings"></div>
 
       <!-- ── SUBMISSIONS VIEWER ── -->
@@ -417,7 +426,14 @@ function openSettings(){
   renderSettings();
   populateSubPickers();
   populateAkPickers();
+  // Pre-fill stored API key
+  const ki = document.getElementById('anthropic-key-input');
+  if(ki) ki.value = cfg.anthropicKey || '';
   document.getElementById('st-overlay').classList.add('show');
+}
+function toggleAnthrKey(){
+  const ki=document.getElementById('anthropic-key-input');
+  if(ki) ki.type = ki.type==='password' ? 'text' : 'password';
 }
 function closeST(){document.getElementById('st-overlay').classList.remove('show');}
 
@@ -497,6 +513,9 @@ async function saveSettings(){
     return{active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
   });
   cfg.minicases=minicases;
+  // Save Anthropic key if provided
+  const keyEl=document.getElementById('anthropic-key-input');
+  if(keyEl && keyEl.value.trim()) cfg.anthropicKey=keyEl.value.trim();
   try{
     await HUB.set(cfg);
     const m=document.getElementById('save-msg');m.style.display='inline';setTimeout(()=>m.style.display='none',3000);
@@ -520,6 +539,28 @@ function showMsg(el,t,c){el.textContent=t;el.style.color=c==='green'?'#16a34a':'
 // GRADING DATA & HELPERS
 // ═══════════════════════════════════════════════════
 const MC1_ANS = [{"grupo":1,"mu_vgt":0.009033,"mu_vht":0.008635,"s_vgt":0.05221,"s_vht":0.039633,"rho":0.665509,"check_ret_vgt":[0.005652,0.042238,0.018006]},{"grupo":2,"mu_vgt":0.009662,"mu_vht":0.009037,"s_vgt":0.051727,"s_vht":0.039946,"rho":0.668536,"check_ret_vgt":[-0.005953,-0.041097,-0.013017]},{"grupo":3,"mu_vgt":0.010316,"mu_vht":0.009199,"s_vgt":0.051691,"s_vht":0.039834,"rho":0.661628,"check_ret_vgt":[-0.011127,0.018006,-0.129404]},{"grupo":4,"mu_vgt":0.011923,"mu_vht":0.009554,"s_vgt":0.05164,"s_vht":0.040158,"rho":0.672912,"check_ret_vgt":[0.075796,-0.013017,-0.01308]},{"grupo":5,"mu_vgt":0.010115,"mu_vht":0.009133,"s_vgt":0.052891,"s_vht":0.042191,"rho":0.685151,"check_ret_vgt":[-0.022121,-0.129404,-0.024549]},{"grupo":6,"mu_vgt":0.011449,"mu_vht":0.00988,"s_vgt":0.054481,"s_vht":0.042219,"rho":0.681,"check_ret_vgt":[0.028838,-0.01308,0.092532]},{"grupo":7,"mu_vgt":0.013039,"mu_vht":0.010605,"s_vgt":0.052694,"s_vht":0.04224,"rho":0.688157,"check_ret_vgt":[-0.029507,-0.024549,-0.077581]},{"grupo":8,"mu_vgt":0.014111,"mu_vht":0.010884,"s_vgt":0.054462,"s_vht":0.043743,"rho":0.710096,"check_ret_vgt":[0.026312,0.092532,0.071979]},{"grupo":9,"mu_vgt":0.018835,"mu_vht":0.013377,"s_vgt":0.051295,"s_vht":0.041677,"rho":0.677596,"check_ret_vgt":[-0.040427,-0.077581,0.045433]},{"grupo":10,"mu_vgt":0.017164,"mu_vht":0.013393,"s_vgt":0.049479,"s_vht":0.039794,"rho":0.685486,"check_ret_vgt":[0.025151,0.071979,-0.001419]},{"grupo":11,"mu_vgt":0.017568,"mu_vht":0.013098,"s_vgt":0.049312,"s_vht":0.040297,"rho":0.701828,"check_ret_vgt":[0.045059,0.045433,0.087695]},{"grupo":12,"mu_vgt":0.014907,"mu_vht":0.012786,"s_vgt":0.050827,"s_vht":0.040797,"rho":0.715316,"check_ret_vgt":[-0.06922,-0.001419,0.005237]},{"grupo":13,"mu_vgt":0.013512,"mu_vht":0.012315,"s_vgt":0.052706,"s_vht":0.041296,"rho":0.71301,"check_ret_vgt":[0.024397,0.087695,0.034342]},{"grupo":14,"mu_vgt":0.015981,"mu_vht":0.011684,"s_vgt":0.053797,"s_vht":0.041361,"rho":0.679677,"check_ret_vgt":[-0.064181,0.005237,0.054473]},{"grupo":15,"mu_vgt":0.016253,"mu_vht":0.011538,"s_vgt":0.053506,"s_vht":0.041234,"rho":0.676515,"check_ret_vgt":[0.069757,0.034342,-0.012816]}];
+
+
+const MC2_ANS=[{"v":1,"start":"Feb 2005","end":"Jan 2010","leader":"VGT","min_risk":"VHT","corr":0.637484,"target_ret":0.4366,"mu":{VGT:0.4366,VHT:0.3972,VCR:0.0302,VOX:0.3525,VFH:-0.4909},"sig":{VGT:6.0297,VHT:4.1012,VCR:6.1499,VOX:5.183,VFH:7.5309},"TR":{ret:0.4366,risk:3.8373,sharpe:0.016,w:{VGT:-0.2,VHT:0.84,VCR:0.1309,VOX:0.3542,VFH:-0.1252}},"MVP":{ret:0.5173,risk:3.7939,sharpe:0.0375,w:{VGT:-0.1582,VHT:0.898,VCR:0.0951,VOX:0.3651,VFH:-0.2}},"MS":{ret:0.6647,risk:4.1514,sharpe:0.0698,w:{VGT:0.4055,VHT:1.0071,VCR:-0.2,VOX:-0.0126,VFH:-0.2}}},
+{"v":2,"start":"Oct 2005","end":"Sep 2010","leader":"VOX","min_risk":"VHT","corr":0.619309,"target_ret":0.5738,"mu":{VGT:0.521,VHT:0.2543,VCR:0.3612,VOX:0.5738,VFH:-0.4344},"sig":{VGT:6.4247,VHT:4.395,VCR:6.6541,VOX:5.4522,VFH:7.891},"TR":{ret:0.5738,risk:4.2211,sharpe:0.0471,w:{VGT:-0.0837,VHT:0.7053,VCR:-0.0908,VOX:0.6692,VFH:-0.2}},"MVP":{ret:0.4801,risk:4.0529,sharpe:0.0259,w:{VGT:-0.2,VHT:0.9216,VCR:0.0537,VOX:0.4246,VFH:-0.2}},"MS":{ret:0.8607,risk:6.4035,sharpe:0.0759,w:{VGT:0.4,VHT:-0.2,VCR:-0.2,VOX:1.2,VFH:-0.2}}},
+{"v":3,"start":"Jun 2006","end":"May 2011","leader":"VGT","min_risk":"VHT","corr":0.684861,"target_ret":0.7971,"mu":{VGT:0.7971,VHT:0.6144,VCR:0.6609,VOX:0.6659,VFH:-0.4099},"sig":{VGT:6.3573,VHT:4.4545,VCR:6.7039,VOX:5.2469,VFH:7.9652},"TR":{ret:0.7971,risk:4.0825,sharpe:0.1034,w:{VGT:-0.1696,VHT:0.8726,VCR:0.0207,VOX:0.4608,VFH:-0.1846}},"MVP":{ret:0.8144,risk:4.081,sharpe:0.1077,w:{VGT:-0.1635,VHT:0.8746,VCR:0.033,VOX:0.4559,VFH:-0.2}},"MS":{ret:0.9049,risk:4.4578,sharpe:0.1189,w:{VGT:0.4417,VHT:0.6816,VCR:-0.2,VOX:0.2767,VFH:-0.2}}},
+{"v":4,"start":"Feb 2007","end":"Jan 2012","leader":"VGT","min_risk":"VHT","corr":0.724438,"target_ret":0.6317,"mu":{VGT:0.6317,VHT:0.3937,VCR:0.432,VOX:0.0146,VFH:-0.7687},"sig":{VGT:6.6075,VHT:4.6284,VCR:6.9847,VOX:5.3147,VFH:8.4605},"TR":{ret:0.6317,risk:4.3829,sharpe:0.0586,w:{VGT:0.1917,VHT:0.9907,VCR:-0.0801,VOX:0.0977,VFH:-0.2}},"MVP":{ret:0.3845,risk:4.1407,sharpe:0.0023,w:{VGT:-0.2,VHT:0.8928,VCR:-0.0043,VOX:0.5115,VFH:-0.2}},"MS":{ret:0.9349,risk:5.6365,sharpe:0.0993,w:{VGT:1.0109,VHT:0.5891,VCR:-0.2,VOX:-0.2,VFH:-0.2}}},
+{"v":5,"start":"Oct 2007","end":"Sep 2012","leader":"VCR","min_risk":"VHT","corr":0.736025,"target_ret":0.7324,"mu":{VGT:0.5994,VHT:0.5514,VCR:0.7324,VOX:0.2162,VFH:-0.4684},"sig":{VGT:6.7472,VHT:4.6017,VCR:7.0333,VOX:5.3296,VFH:8.524},"TR":{ret:0.7324,risk:4.2996,sharpe:0.0831,w:{VGT:-0.118,VHT:1.005,VCR:0.1698,VOX:0.1432,VFH:-0.2}},"MVP":{ret:0.593,risk:4.1518,sharpe:0.0525,w:{VGT:-0.1754,VHT:0.9056,VCR:0.0068,VOX:0.463,VFH:-0.2}},"MS":{ret:0.9337,risk:5.0792,sharpe:0.11,w:{VGT:-0.2,VHT:0.9323,VCR:0.6677,VOX:-0.2,VFH:-0.2}}},
+{"v":6,"start":"Jun 2008","end":"May 2013","leader":"VCR","min_risk":"VHT","corr":0.74466,"target_ret":1.3031,"mu":{VGT:0.7297,VHT:1.0145,VCR:1.3031,VOX:0.5746,VFH:0.3257},"sig":{VGT:6.351,VHT:4.6657,VCR:6.9432,VOX:5.1413,VFH:8.395},"TR":{ret:1.3031,risk:4.6027,sharpe:0.2016,w:{VGT:-0.2,VHT:1.0328,VCR:0.3506,VOX:0.0166,VFH:-0.2}},"MVP":{ret:0.8786,risk:4.224,sharpe:0.1192,w:{VGT:0.0969,VHT:0.8343,VCR:-0.1726,VOX:0.433,VFH:-0.1917}},"MS":{ret:1.475,risk:5.0777,sharpe:0.2166,w:{VGT:-0.2,VHT:0.9839,VCR:0.6161,VOX:-0.2,VFH:-0.2}}},
+{"v":7,"start":"Feb 2009","end":"Jan 2014","leader":"VCR","min_risk":"VHT","corr":0.644198,"target_ret":2.3611,"mu":{VGT:1.8411,VHT:1.6233,VCR:2.3611,VOX:1.4606,VFH:1.6714},"sig":{VGT:5.166,VHT:4.0327,VCR:5.5249,VOX:4.1651,VFH:6.5062},"TR":{ret:2.3611,risk:4.7811,sharpe:0.4154,w:{VGT:-0.2,VHT:0.5391,VCR:1.034,VOX:-0.173,VFH:-0.2}},"MVP":{ret:1.5498,risk:3.5837,sharpe:0.3278,w:{VGT:0.2053,VHT:0.6183,VCR:-0.0526,VOX:0.429,VFH:-0.2}},"MS":{ret:2.2127,risk:4.3939,sharpe:0.4182,w:{VGT:-0.2,VHT:0.5705,VCR:0.8634,VOX:-0.0339,VFH:-0.2}}},
+{"v":8,"start":"Oct 2009","end":"Sep 2014","leader":"VCR","min_risk":"VHT","corr":0.729512,"target_ret":1.7305,"mu":{VGT:1.3416,VHT:1.5965,VCR:1.7305,VOX:1.1335,VFH:1.0166},"sig":{VGT:4.6563,VHT:3.6361,VCR:4.7075,VOX:3.9322,VFH:4.9469},"TR":{ret:1.7305,risk:3.5674,sharpe:0.38,w:{VGT:-0.1631,VHT:0.8336,VCR:0.3712,VOX:0.1583,VFH:-0.2}},"MVP":{ret:1.4359,risk:3.3613,sharpe:0.3156,w:{VGT:0.1834,VHT:0.6577,VCR:-0.0967,VOX:0.4048,VFH:-0.1491}},"MS":{ret:1.8717,risk:3.8512,sharpe:0.3886,w:{VGT:-0.2,VHT:0.9435,VCR:0.5353,VOX:-0.0788,VFH:-0.2}}},
+{"v":9,"start":"Jun 2010","end":"May 2015","leader":"VHT","min_risk":"VHT","corr":1.0,"target_ret":1.8443,"mu":{VGT:1.3941,VHT:1.8443,VCR:1.6426,VOX:1.1073,VFH:1.1061},"sig":{VGT:4.4048,VHT:3.3679,VCR:4.47,VOX:3.7318,VFH:4.6753},"TR":{ret:1.8443,risk:3.2335,sharpe:0.4544,w:{VGT:-0.002,VHT:0.9809,VCR:0.027,VOX:0.1942,VFH:-0.2}},"MVP":{ret:1.5701,risk:3.1132,sharpe:0.3839,w:{VGT:0.1513,VHT:0.6968,VCR:-0.1759,VOX:0.395,VFH:-0.0672}},"MS":{ret:2.0608,risk:3.5417,sharpe:0.476,w:{VGT:-0.2,VHT:1.2,VCR:0.2358,VOX:-0.0358,VFH:-0.2}}},
+{"v":10,"start":"Feb 2011","end":"Jan 2016","leader":"VHT","min_risk":"VOX","corr":0.580673,"target_ret":1.4354,"mu":{VGT:0.9406,VHT:1.4354,VCR:1.2698,VOX:0.7671,VFH:0.7296},"sig":{VGT:4.2272,VHT:3.8776,VCR:4.1757,VOX:3.8103,VFH:4.5244},"TR":{ret:1.4354,risk:3.6188,sharpe:0.293,w:{VGT:-0.1837,VHT:0.7062,VCR:0.4392,VOX:0.2384,VFH:-0.2}},"MVP":{ret:1.0516,risk:3.3775,sharpe:0.2003,w:{VGT:0.1982,VHT:0.3606,VCR:0.0146,VOX:0.4758,VFH:-0.0491}},"MS":{ret:1.7429,risk:4.3377,sharpe:0.3154,w:{VGT:-0.2,VHT:1.2,VCR:0.4,VOX:-0.2,VFH:-0.2}}},
+{"v":11,"start":"Oct 2011","end":"Sep 2016","leader":"VHT","min_risk":"VHT","corr":1.0,"target_ret":1.6058,"mu":{VGT:1.4366,VHT:1.6058,VCR:1.5368,VOX:1.0655,VFH:1.4023},"sig":{VGT:4.3116,VHT:3.7062,VCR:3.9323,VOX:3.737,VFH:4.0893},"TR":{ret:1.6058,risk:3.6181,sharpe:0.3402,w:{VGT:-0.0647,VHT:0.762,VCR:0.4545,VOX:0.0311,VFH:-0.1828}},"MVP":{ret:1.3056,risk:3.1653,sharpe:0.294,w:{VGT:-0.005,VHT:0.3035,VCR:-0.0061,VOX:0.4674,VFH:0.2402}},"MS":{ret:1.6205,risk:3.6605,sharpe:0.3403,w:{VGT:-0.0688,VHT:0.7845,VCR:0.4754,VOX:0.0089,VFH:-0.2}}},
+{"v":12,"start":"Jun 2012","end":"May 2017","leader":"VHT","min_risk":"VCR","corr":0.764466,"target_ret":1.4632,"mu":{VGT:1.4548,VHT:1.4632,VCR:1.3871,VOX:0.9571,VFH:1.3845},"sig":{VGT:3.6705,VHT:3.7731,VCR:3.4178,VOX:3.8768,VFH:3.6931},"TR":{ret:1.4632,risk:3.2954,sharpe:0.3302,w:{VGT:0.403,VHT:0.3351,VCR:0.0584,VOX:-0.0559,VFH:0.2594}},"MVP":{ret:1.2668,risk:2.9537,sharpe:0.3019,w:{VGT:0.2342,VHT:0.0727,VCR:0.1186,VOX:0.3279,VFH:0.2466}},"MS":{ret:1.4435,risk:3.2331,sharpe:0.3305,w:{VGT:0.386,VHT:0.3088,VCR:0.0644,VOX:-0.0174,VFH:0.2581}}},
+{"v":13,"start":"Feb 2013","end":"Jan 2018","leader":"VGT","min_risk":"VCR","corr":0.777967,"target_ret":1.6942,"mu":{VGT:1.6942,VHT:1.4251,VCR:1.3888,VOX:0.7087,VFH:1.4304},"sig":{VGT:3.7173,VHT:3.6529,VCR:3.4491,VOX:3.6537,VFH:3.7466},"TR":{ret:1.6942,risk:3.4955,sharpe:0.3774,w:{VGT:0.7248,VHT:0.2922,VCR:-0.2,VOX:-0.0912,VFH:0.2742}},"MVP":{ret:1.21,risk:2.8414,sharpe:0.2939,w:{VGT:0.227,VHT:0.1742,VCR:-0.0097,VOX:0.3876,VFH:0.2208}},"MS":{ret:1.7532,risk:3.6459,sharpe:0.378,w:{VGT:0.7779,VHT:0.3011,VCR:-0.2,VOX:-0.1536,VFH:0.2746}}},
+{"v":14,"start":"Oct 2013","end":"Sep 2018","leader":"VGT","min_risk":"VCR","corr":0.774605,"target_ret":1.709,"mu":{VGT:1.709,VHT:1.2712,VCR:1.1612,VOX:0.4503,VFH:1.1173},"sig":{VGT:3.8688,VHT:3.6265,VCR:3.4187,VOX:3.5254,VFH:3.7638},"TR":{ret:1.709,risk:3.6875,sharpe:0.3618,w:{VGT:0.8127,VHT:0.3541,VCR:-0.2,VOX:-0.0977,VFH:0.1308}},"MVP":{ret:0.9567,risk:2.8105,sharpe:0.207,w:{VGT:0.1427,VHT:0.187,VCR:0.0338,VOX:0.4127,VFH:0.2238}},"MS":{ret:1.9046,risk:4.1344,sharpe:0.37,w:{VGT:1.0313,VHT:0.3408,VCR:-0.2,VOX:-0.2,VFH:0.028}}},
+{"v":15,"start":"Jun 2014","end":"May 2019","leader":"VGT","min_risk":"VOX","corr":0.560706,"target_ret":1.4159,"mu":{VGT:1.4159,VHT:0.8669,VCR:0.932,VOX:0.2108,VFH:0.8717},"sig":{VGT:4.6373,VHT:4.0579,VCR:4.1219,VOX:3.997,VFH:4.5801},"TR":{ret:1.4159,risk:4.4024,sharpe:0.2364,w:{VGT:0.8178,VHT:0.4468,VCR:-0.1913,VOX:-0.1707,VFH:0.0973}},"MVP":{ret:0.6078,risk:3.4495,sharpe:0.0675,w:{VGT:0.1379,VHT:0.4218,VCR:-0.2,VOX:0.4915,VFH:0.1488}},"MS":{ret:1.6436,risk:5.0152,sharpe:0.253,w:{VGT:1.2,VHT:0.2667,VCR:-0.2,VOX:-0.2,VFH:-0.0667}}},
+{"v":16,"start":"Feb 2015","end":"Jan 2020","leader":"VGT","min_risk":"VOX","corr":0.578575,"target_ret":1.7664,"mu":{VGT:1.7664,VHT:0.8468,VCR:1.076,VOX:0.5193,VFH:1.0438},"sig":{VGT:4.6865,VHT:4.1377,VCR:4.0658,VOX:4.0003,VFH:4.643},"TR":{ret:1.7664,risk:4.6515,sharpe:0.2991,w:{VGT:1.0081,VHT:0.1254,VCR:-0.2,VOX:-0.0482,VFH:0.1147}},"MVP":{ret:0.7765,risk:3.5324,sharpe:0.1137,w:{VGT:0.0918,VHT:0.3803,VCR:-0.0714,VOX:0.4889,VFH:0.1104}},"MS":{ret:2.0288,risk:5.2264,sharpe:0.3164,w:{VGT:1.2,VHT:-0.0761,VCR:-0.0608,VOX:-0.2,VFH:0.1369}}},
+{"v":17,"start":"Oct 2015","end":"Sep 2020","leader":"VGT","min_risk":"VHT","corr":0.688814,"target_ret":2.1709,"mu":{VGT:2.1709,VHT:1.0813,VCR:1.4436,VOX:0.7866,VFH:0.7489},"sig":{VGT:5.4038,VHT:4.3528,VCR:5.8554,VOX:4.998,VFH:5.8952},"TR":{ret:2.1709,risk:4.919,sharpe:0.3651,w:{VGT:0.9816,VHT:0.5068,VCR:-0.2,VOX:-0.0883,VFH:-0.2}},"MVP":{ret:1.0653,risk:4.0145,sharpe:0.172,w:{VGT:0.1443,VHT:0.7092,VCR:-0.2,VOX:0.382,VFH:-0.0356}},"MS":{ret:2.4417,risk:5.3787,sharpe:0.3842,w:{VGT:1.2,VHT:0.4,VCR:-0.2,VOX:-0.2,VFH:-0.2}}},
+{"v":18,"start":"Jun 2016","end":"May 2021","leader":"VGT","min_risk":"VHT","corr":0.70434,"target_ret":2.2861,"mu":{VGT:2.2861,VHT:1.24,VCR:1.8097,VOX:0.9807,VFH:1.466},"sig":{VGT:5.262,VHT:4.2422,VCR:5.9586,VOX:5.096,VFH:6.2424},"TR":{ret:2.2861,risk:4.9519,sharpe:0.3859,w:{VGT:1.0688,VHT:0.3749,VCR:-0.2,VOX:-0.2,VFH:-0.0437}},"MVP":{ret:1.2162,risk:3.9567,sharpe:0.2126,w:{VGT:0.18,VHT:0.7693,VCR:-0.2,VOX:0.3189,VFH:-0.0682}},"MS":{ret:2.4232,risk:5.2148,sharpe:0.3928,w:{VGT:1.2,VHT:0.2442,VCR:-0.2,VOX:-0.2,VFH:-0.0442}}},
+{"v":19,"start":"Feb 2017","end":"Jan 2022","leader":"VGT","min_risk":"VHT","corr":0.728178,"target_ret":2.2649,"mu":{VGT:2.2649,VHT:1.2826,VCR:1.6999,VOX:0.6732,VFH:1.1743},"sig":{VGT:5.5121,VHT:4.4453,VCR:6.1755,VOX:5.133,VFH:6.1452},"TR":{ret:2.2649,risk:4.9973,sharpe:0.3782,w:{VGT:0.9515,VHT:0.5337,VCR:-0.2,VOX:-0.2,VFH:-0.0852}},"MVP":{ret:1.0834,risk:4.1879,sharpe:0.1691,w:{VGT:0.1128,VHT:0.7628,VCR:-0.2,VOX:0.3822,VFH:-0.0578}},"MS":{ret:2.5212,risk:5.4506,sharpe:0.3938,w:{VGT:1.2,VHT:0.3971,VCR:-0.2,VOX:-0.2,VFH:-0.1971}}},
+{"v":20,"start":"Oct 2017","end":"Sep 2022","leader":"VGT","min_risk":"VHT","corr":0.759494,"target_ret":1.475,"mu":{VGT:1.475,VHT:0.8708,VCR:1.1885,VOX:0.1114,VFH:0.6209},"sig":{VGT:6.506,VHT:4.6356,VCR:7.1894,VOX:5.8952,VFH:6.5881},"TR":{ret:1.475,risk:5.2496,sharpe:0.2095,w:{VGT:0.7711,VHT:0.8289,VCR:-0.2,VOX:-0.2,VFH:-0.2}},"MVP":{ret:0.6322,risk:4.4538,sharpe:0.0577,w:{VGT:-0.0395,VHT:1.0032,VCR:-0.2,VOX:0.1808,VFH:0.0555}},"MS":{ret:1.7341,risk:6.1605,sharpe:0.2206,w:{VGT:1.2,VHT:0.4,VCR:-0.2,VOX:-0.2,VFH:-0.2}}}];
 
 function pf5050(mu1,mu2,s1,s2,rho){
   return {ret:0.5*mu1+0.5*mu2, risk:Math.sqrt(0.25*s1*s1+0.25*s2*s2+2*0.5*0.5*rho*s1*s2)};
@@ -681,6 +722,7 @@ async function loadSubmission(){
 }
 
 function renderSubmission(d, docId, mcNum, sec, grp){
+  if(mcNum===2){ renderSubmissionMC2(d, docId, sec, grp); return; }
   const div = document.getElementById('sub-data');
   const team = Array.isArray(d.team)?d.team:[];
   const submittedAt = d.submittedAt ? new Date(d.submittedAt).toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
@@ -912,7 +954,8 @@ function getGNumForKey(mcIdx, secIdx0, grp){
   const secs = mc.sections||[];
   let offset=0;
   for(let s=0;s<secIdx0;s++) offset+=(secs[s].groups||5);
-  return ((offset+grp-1)%15)+1; // 15 answer sets in MC1_ANS
+  const mod = (mcIdx===1)?20:15; // MC2 has 20 versions, MC1 has 15
+  return ((offset+grp-1)%mod)+1;
 }
 
 function loadAnswerKey(){
@@ -924,60 +967,267 @@ function loadAnswerKey(){
   }
   const mcIdx  = parseInt(mcIdxStr);
   const secNum = parseInt(secStr); // 1-based
-  if(mcIdx !== 0){
-    div.innerHTML='<div class="sub-empty">Answer key embedded only for Minicase 1.</div>'; return;
-  }
   const mc       = cfg.minicases[mcIdx];
   const secData  = (mc.sections||[])[secNum-1]||{};
   const secLabel = secData.name||'Section '+secNum;
   const numG     = secData.groups||5;
-  let rows='';
-  for(let g=1;g<=numG;g++){
-    const gn    = getGNumForKey(mcIdx, secNum-1, g);
-    const A     = MC1_ANS.find(a=>a.grupo===gn)||MC1_ANS[0];
-    const exp50 = pf5050(A.mu_vgt,A.mu_vht,A.s_vgt,A.s_vht,A.rho);
-    const expMV = findMVP(A.mu_vgt,A.mu_vht,A.s_vgt,A.s_vht,A.rho);
-    const q1exp = A.check_ret_vgt[1];
-    const even  = g%2===0;
-    rows+=`<tr style="background:${even?'#f9fafb':'#fff'};border-bottom:1px solid #e5e7eb;">
-      <td style="padding:6px 10px;font-weight:700;color:var(--navy);white-space:nowrap;">Group ${g}</td>
-      <td style="padding:6px 10px;font-size:.73rem;color:#9ca3af;white-space:nowrap;">gNum ${gn}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${(q1exp*100).toFixed(4)}%</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.mu_vgt)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.s_vgt)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.mu_vht)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.s_vht)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${numFmt(A.rho)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(exp50.ret)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(exp50.risk)}</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${(expMV.w*100).toFixed(1)}%</td>
-      <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(expMV.risk)}</td>
-    </tr>`;
+
+  if(mcIdx===0){
+    // ── MC1 Answer Key ──
+    let rows='';
+    for(let g=1;g<=numG;g++){
+      const gn    = getGNumForKey(0, secNum-1, g);
+      const A     = MC1_ANS.find(a=>a.grupo===gn)||MC1_ANS[0];
+      const exp50 = pf5050(A.mu_vgt,A.mu_vht,A.s_vgt,A.s_vht,A.rho);
+      const expMV = findMVP(A.mu_vgt,A.mu_vht,A.s_vgt,A.s_vht,A.rho);
+      const q1exp = A.check_ret_vgt[1];
+      const even  = g%2===0;
+      rows+=`<tr style="background:${even?'#f9fafb':'#fff'};border-bottom:1px solid #e5e7eb;">
+        <td style="padding:6px 10px;font-weight:700;color:var(--navy);white-space:nowrap;">Group ${g}</td>
+        <td style="padding:6px 10px;font-size:.73rem;color:#9ca3af;white-space:nowrap;">gNum ${gn}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${(q1exp*100).toFixed(4)}%</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.mu_vgt)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.s_vgt)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.mu_vht)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(A.s_vht)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${numFmt(A.rho)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(exp50.ret)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(exp50.risk)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${(expMV.w*100).toFixed(1)}%</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${pctFmt(expMV.risk)}</td>
+      </tr>`;
+    }
+    div.innerHTML=`
+    <div style="margin-top:6px;font-size:.78rem;color:var(--navy);font-weight:700;margin-bottom:6px;">
+      Minicase 1 – ${secLabel} – ${numG} group${numG>1?'s':''}
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:.79rem;">
+        <thead><tr style="background:var(--navy);color:#fff;">
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Group</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">ID</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q1 Check Ret</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 μ VGT</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 σ VGT</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 μ VHT</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 σ VHT</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q3 ρ</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q4 Ret</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q4 Risk</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q5c Alloc</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q5c Risk</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  } else if(mcIdx===1){
+    // ── MC2 Answer Key ──
+    const ETFS=['VGT','VHT','VCR','VOX','VFH'];
+    let rows='';
+    for(let g=1;g<=numG;g++){
+      const gn = getGNumForKey(1, secNum-1, g);
+      const A  = MC2_ANS[gn-1];
+      const even = g%2===0;
+      const wFmt = (p) => ETFS.map(e=>`${e}:${(p.w[e]*100).toFixed(1)}%`).join(', ');
+      rows+=`<tr style="background:${even?'#f9fafb':'#fff'};border-bottom:1px solid #e5e7eb;">
+        <td style="padding:6px 10px;font-weight:700;color:var(--navy);white-space:nowrap;">Group ${g}</td>
+        <td style="padding:6px 10px;font-size:.73rem;color:#9ca3af;white-space:nowrap;">gNum ${gn}<br><span style="color:#6b7280;">${A.start}–${A.end}</span></td>
+        <td style="padding:6px 10px;font-size:.78rem;">${A.leader}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.sig[A.min_risk].toFixed(4)}<br><span style="font-size:.7rem;color:#9ca3af;">${A.min_risk}</span></td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.corr.toFixed(6)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.MVP.ret.toFixed(4)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.MVP.risk.toFixed(4)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.MVP.sharpe.toFixed(4)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.MS.ret.toFixed(4)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.MS.risk.toFixed(4)}</td>
+        <td style="padding:6px 10px;font-family:monospace;font-size:.79rem;">${A.MS.sharpe.toFixed(4)}</td>
+      </tr>`;
+    }
+    div.innerHTML=`
+    <div style="margin-top:6px;font-size:.78rem;color:var(--navy);font-weight:700;margin-bottom:6px;">
+      Minicase 2 – ${secLabel} – ${numG} group${numG>1?'s':''}
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:.79rem;">
+        <thead><tr style="background:var(--navy);color:#fff;">
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Group</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">ID / Period</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q1a Leader</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q1b σ(min-risk)</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q1c Corr</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">MVP Ret</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">MVP Risk</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">MVP Sharpe</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">MaxS Ret</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">MaxS Risk</th>
+          <th style="padding:7px 10px;text-align:left;white-space:nowrap;">MaxS Sharpe</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  } else {
+    div.innerHTML='<div class="sub-empty">Answer key not available for this minicase.</div>';
   }
-  div.innerHTML=`
-  <div style="margin-top:6px;font-size:.78rem;color:var(--navy);font-weight:700;margin-bottom:6px;">
-    Minicase 1 – ${secLabel} – ${numG} group${numG>1?'s':''}
-  </div>
-  <div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:.79rem;">
-      <thead><tr style="background:var(--navy);color:#fff;">
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Group</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">ID</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q1 Check Ret</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 μ VGT</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 σ VGT</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 μ VHT</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q2 σ VHT</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q3 ρ</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q4 Ret</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q4 Risk</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q5c Alloc</th>
-        <th style="padding:7px 10px;text-align:left;white-space:nowrap;">Q5c Risk</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
 }
+
+// ═══════════════════════════════════════════════════
+// MC2 SUBMISSION RENDERER
+// ═══════════════════════════════════════════════════
+function renderSubmissionMC2(d, docId, sec, grp){
+  const div = document.getElementById('sub-data');
+  const team = Array.isArray(d.team)?d.team:[];
+  const gNum = d.gNum||1;
+  const A = MC2_ANS[gNum-1]||MC2_ANS[0];
+  const submittedAt = d.submittedAt ? new Date(d.submittedAt).toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
+
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function fEdit(id,val,type){
+    if(type==='textarea') return `<textarea id="ef_${id}" style="width:100%;border:1px solid #dde0e6;border-radius:4px;padding:4px 7px;font-size:.81rem;font-family:inherit;resize:vertical;min-height:54px;">${esc(val)}</textarea>`;
+    return `<input type="text" id="ef_${id}" value="${esc(val)}" style="width:100%;border:1px solid #dde0e6;border-radius:4px;padding:4px 7px;font-size:.81rem;">`;
+  }
+  function chk(ok){return ok?'<span style="color:#16a34a">✅</span>':'<span style="color:#dc2626">❌</span>';}
+  function cmpRow(lbl,editId,stuVal,expDisp,pts,ok){
+    return `<tr><td style="padding:5px 8px;font-size:.79rem;color:#6b7280;font-weight:600;white-space:nowrap;">${lbl}</td><td style="padding:4px 8px;">${fEdit(editId,stuVal,'input')}</td><td style="padding:5px 8px;font-size:.79rem;color:#374151;white-space:nowrap;">${esc(expDisp)}</td><td style="padding:5px 8px;text-align:center;">${chk(ok)}</td><td style="padding:5px 8px;text-align:right;font-size:.75rem;color:#9ca3af;">${pts}</td></tr>`;
+  }
+  function txtRow(lbl,editId,val,sc,mx){
+    const w=(val||'').trim().split(/\s+/).filter(Boolean).length;
+    const c=sc>=mx?'#16a34a':sc>0?'#ca8a04':'#dc2626';
+    const badge=sc>=mx?'✅':sc>0?'½':'⬜';
+    return `<tr><td style="padding:5px 8px;font-size:.79rem;color:#6b7280;font-weight:600;vertical-align:top;padding-top:9px;white-space:nowrap;">${lbl}</td><td colspan="2" style="padding:4px 8px;">${fEdit(editId,val,'textarea')}<div style="font-size:.7rem;color:#9ca3af;margin-top:2px;">${w} words</div></td><td style="padding:5px 8px;text-align:center;color:${c};font-weight:700;vertical-align:top;padding-top:9px;">${badge}</td><td style="padding:5px 8px;text-align:right;font-size:.75rem;color:#9ca3af;vertical-align:top;padding-top:9px;">${sc.toFixed(2)}/${mx}</td></tr>`;
+  }
+  function secHdr(title){return `<tr><td colspan="5" style="background:#f0f4ff;padding:5px 10px;font-size:.75rem;font-weight:700;color:#002147;border-top:2px solid #dde0e6;">${title}</td></tr>`;}
+  function scoreBar(sc,mx){
+    const pct=mx===0?0:Math.round(sc/mx*100);
+    const c=pct>=90?'#16a34a':pct>=60?'#ca8a04':'#dc2626';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.74rem;"><span style="display:inline-block;width:48px;height:6px;background:#374151;border-radius:3px;overflow:hidden;"><span style="display:block;width:${pct}%;height:100%;background:${c};"></span></span><span style="color:${c};font-weight:700;">${sc.toFixed(2)}/${mx}</span></span>`;
+  }
+
+  const p1 = d.p1||{}, p2 = d.p2||{}, p3 = d.p3||{};
+
+  // ── SCORING ──
+  // P1: Gate (3 pts)
+  const q1a_ok = (p1.q1a||'').trim().toUpperCase()===A.leader.toUpperCase();
+  const q1b_ok = !isNaN(parseFloat(p1.q1b))&&Math.abs(parseFloat(p1.q1b)-A.sig[A.min_risk])<=0.05;
+  const q1c_ok = !isNaN(parseFloat(p1.q1c))&&Math.abs(parseFloat(p1.q1c)-A.corr)<=0.005;
+  const p1_sc = (q1a_ok?1:0)+(q1b_ok?1:0)+(q1c_ok?1:0);
+
+  // P2: Solver portfolios (3 pts) — tolerances widened to match student page
+  const retOk=(stu,exp,tol)=>!isNaN(parseFloat(stu))&&Math.abs(parseFloat(stu)-exp)<=tol;
+  const q2a_ret_ok = retOk(p2.q2a_ret, A.TR.ret, 0.10);
+  const q2a_risk_ok= retOk(p2.q2a_risk,A.TR.risk,0.15);
+  const q2b_ret_ok = retOk(p2.q2b_ret, A.MVP.ret, 0.15);
+  const q2b_risk_ok= retOk(p2.q2b_risk,A.MVP.risk,0.15);
+  const q2c_s_ok   = retOk(p2.q2c_sharpe,A.MS.sharpe,0.015);
+  const q2c_ret_ok = retOk(p2.q2c_ret, A.MS.ret, 0.10);
+  const q2c_risk_ok= retOk(p2.q2c_risk,A.MS.risk,0.10);
+  const p2_sc = ((q2a_ret_ok?0.5:0)+(q2a_risk_ok?0.5:0))+
+                ((q2b_ret_ok?0.5:0)+(q2b_risk_ok?0.5:0))+
+                (q2c_s_ok?1:((q2c_ret_ok&&q2c_risk_ok)?0.5:0));
+
+  // P3: Devil's Advocate text — 3 questions × 1 pt = 3 pts
+  function textSc(txt,full){const t=(txt||'').trim();return t.length<60?0:t.length<120?full*0.5:full;}
+  const q3a_sc=textSc(p3.q3a_student,1);
+  const q3b_sc=textSc(p3.q3b_student,1);
+  const q3c_sc=textSc(p3.q3c_student,1);
+  const p3_sc = q3a_sc+q3b_sc+q3c_sc;
+
+  // Total: P1(3)+P2(3)+P3(3) = 9 raw → /9×10
+  const rawTotal = p1_sc+p2_sc+p3_sc; // max=9
+  const grade10  = Math.min(10,Math.round(rawTotal/9*100)/10);
+  const gCol     = grade10>=8?'#86efac':grade10>=6?'#fde68a':'#fca5a5';
+
+  let teamHtml='';
+  for(let i=0;i<5;i++) teamHtml+=`<div style="display:flex;gap:8px;margin-bottom:5px;align-items:center;"><label style="font-size:.78rem;color:#6b7280;min-width:72px;">Student ${i+1}</label>${fEdit('team_'+i,team[i]||'','input')}</div>`;
+
+  div.innerHTML=`
+  <div class="sub-card">
+    <div class="sub-card-hd">
+      <span>Minicase 2 · Section ${sec} · Group ${grp} · gNum ${gNum} · ${A.start}–${A.end}</span>
+      <span style="font-size:.72rem;opacity:.7">${submittedAt}</span>
+    </div>
+
+    <!-- GRADE BANNER -->
+    <div style="background:#1e3a5f;color:#fff;padding:12px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="font-size:1.6rem;font-weight:800;color:${gCol};">${grade10.toFixed(1)}<span style="font-size:.82rem;font-weight:400;opacity:.6"> / 10</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span>P1 ${scoreBar(p1_sc,3)}</span>
+        <span>P2 ${scoreBar(p2_sc,3)}</span>
+        <span>P3 ${scoreBar(p3_sc,3)}</span>
+      </div>
+      <div style="margin-left:auto;font-size:.68rem;opacity:.55;">* text graded by length – review manually</div>
+    </div>
+
+    <!-- TEAM -->
+    <div class="sub-section">
+      <div class="sub-section-title">👥 Team Members</div>
+      ${teamHtml}
+    </div>
+
+    <!-- ANSWERS TABLE -->
+    <div style="padding:0 14px 8px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#f9fafb;border-bottom:2px solid #dde0e6;">
+          <th style="padding:6px 8px;text-align:left;font-size:.69rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Field</th>
+          <th style="padding:6px 8px;text-align:left;font-size:.69rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Student Answer</th>
+          <th style="padding:6px 8px;text-align:left;font-size:.69rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Expected</th>
+          <th style="padding:6px 8px;text-align:center;font-size:.69rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">✓</th>
+          <th style="padding:6px 8px;text-align:right;font-size:.69rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Pts</th>
+        </tr></thead>
+        <tbody>
+          ${secHdr('Part 1 – Statistical Gate (3 pts)')}
+          ${cmpRow('Q1a Best-Return ETF','p1_q1a',p1.q1a,A.leader,'1.0',q1a_ok)}
+          ${cmpRow('Q1b σ of min-risk ETF (%/mo)','p1_q1b',p1.q1b,A.sig[A.min_risk].toFixed(4)+' ('+A.min_risk+')','1.0',q1b_ok)}
+          ${cmpRow('Q1c Leader×MinRisk Corr','p1_q1c',p1.q1c,A.corr.toFixed(6),'1.0',q1c_ok)}
+
+          ${secHdr('Part 2 – Solver Portfolios (3 pts)')}
+          ${cmpRow('Q2a TR Return (%/mo)','p2_q2a_ret',p2.q2a_ret,A.TR.ret.toFixed(4),'0.5',q2a_ret_ok)}
+          ${cmpRow('Q2a TR Risk (%/mo)','p2_q2a_risk',p2.q2a_risk,A.TR.risk.toFixed(4),'0.5',q2a_risk_ok)}
+          ${cmpRow('Q2b MVP Return (%/mo)','p2_q2b_ret',p2.q2b_ret,A.MVP.ret.toFixed(4),'0.5',q2b_ret_ok)}
+          ${cmpRow('Q2b MVP Risk (%/mo)','p2_q2b_risk',p2.q2b_risk,A.MVP.risk.toFixed(4),'0.5',q2b_risk_ok)}
+          ${cmpRow('Q2c MaxSharpe Sharpe','p2_q2c_sharpe',p2.q2c_sharpe,A.MS.sharpe.toFixed(4),'1.0',q2c_s_ok)}
+          ${cmpRow('Q2c MaxSharpe Return','p2_q2c_ret',p2.q2c_ret,A.MS.ret.toFixed(4),'ref',q2c_ret_ok)}
+          ${cmpRow('Q2c MaxSharpe Risk','p2_q2c_risk',p2.q2c_risk,A.MS.risk.toFixed(4),'ref',q2c_risk_ok)}
+
+          ${secHdr('Part 3 – Prof. Ceballos Devil\'s Advocate (3 pts)')}
+          ${txtRow('Q3a Return–Risk Tradeoff','p3_q3a_stu',p3.q3a_student,q3a_sc,1)}
+          ${txtRow('Q3b Short Positions & MVP','p3_q3b_stu',p3.q3b_student,q3b_sc,1)}
+          ${txtRow('Q3c Sharpe Ratio & Investor Choice','p3_q3c_stu',p3.q3c_student,q3c_sc,1)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sub-actions">
+      <span class="sub-msg" id="sub-save-msg"></span>
+      <button class="btn-danger" onclick="resetSubmission('${docId}')">🗑 Clear Submission</button>
+      <button class="btn-save-sub" onclick="saveMC2SubmissionEdits('${docId}')">💾 Save Changes</button>
+    </div>
+  </div>`;
+
+  window._subData = JSON.parse(JSON.stringify(d));
+  window._subDocId = docId;
+}
+
+async function saveMC2SubmissionEdits(docId){
+  const msg = document.getElementById('sub-save-msg');
+  const d = window._subData;
+  if(!d){return;}
+  function gv(id){const el=document.getElementById('ef_'+id);return el?el.value.trim():'';}
+  const team=[];for(let i=0;i<5;i++){const v=gv('team_'+i);if(v)team.push(v);}
+  d.team = team;
+  d.p1   = {q1a:gv('p1_q1a'),q1b:gv('p1_q1b'),q1c:gv('p1_q1c')};
+  d.p2   = {q2a_ret:gv('p2_q2a_ret'),q2a_risk:gv('p2_q2a_risk'),q2b_ret:gv('p2_q2b_ret'),q2b_risk:gv('p2_q2b_risk'),q2c_sharpe:gv('p2_q2c_sharpe'),q2c_ret:gv('p2_q2c_ret'),q2c_risk:gv('p2_q2c_risk')};
+  d.p3   = {q3a_student:gv('p3_q3a_stu'),q3a_response:(d.p3||{}).q3a_response||'',q3b_student:gv('p3_q3b_stu'),q3b_response:(d.p3||{}).q3b_response||'',q3c_student:gv('p3_q3c_stu'),q3c_response:(d.p3||{}).q3c_response||''};
+  try{
+    await db.collection('minicase_submissions').doc(docId).set(d);
+    msg.textContent='✓ Saved!';msg.style.color='var(--green)';
+    setTimeout(()=>{msg.textContent='';},3000);
+  }catch(e){
+    msg.textContent='Error: '+e.message;msg.style.color='var(--red)';
+  }
+}
+
 
 loadHub();
 </script>

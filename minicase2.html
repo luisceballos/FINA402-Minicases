@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mini Case 2 — Portfolio Optimization</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#002147;--gold:#c49a3c;--light:#f0f4f8;--card:#fff;
+  --success:#1a7f48;--error:#c0392b;--muted:#6b7280;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.10);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--light);color:#1a1a2e;min-height:100vh}
+header{background:var(--navy);color:#fff;padding:0}
+.hdr-top{display:flex;align-items:center;gap:16px;padding:14px 32px;border-bottom:3px solid var(--gold)}
+.hdr-logo{font-size:13px;font-weight:600;letter-spacing:.5px;opacity:.85;white-space:nowrap}
+.hdr-title{flex:1}
+.hdr-title h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.hdr-title p{font-size:13px;opacity:.8;margin-top:2px}
+.group-badge{background:var(--gold);color:#fff;padding:8px 20px;border-radius:24px;font-weight:800;font-size:18px;white-space:nowrap}
+main{max-width:900px;margin:0 auto;padding:24px 16px 60px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px}
+.card h2{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h2 .badge{background:var(--navy);color:#fff;border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.card h3{font-size:14px;font-weight:600;color:var(--navy);margin:14px 0 8px}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.team-input{width:100%;border:1.5px solid #dde2ea;border-radius:6px;padding:8px 12px;font-size:14px;transition:border-color .2s}
+.team-input:focus{outline:none;border-color:var(--navy)}
+.window-box{background:linear-gradient(135deg,var(--navy) 0%,#1a3a6b 100%);color:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.window-box .wlabel{font-size:12px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.window-box .wval{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.etf-chips{display:flex;gap:6px;flex-wrap:wrap}
+.etf-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.step-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin-bottom:14px}
+.input-group{display:flex;flex-direction:column;gap:4px}
+.input-group label{font-size:13px;color:var(--muted);font-weight:500}
+.num-input{border:2px solid #dde2ea;border-radius:6px;padding:9px 12px;font-size:15px;font-family:monospace;width:100%;transition:border-color .2s}
+.num-input:focus{outline:none;border-color:var(--navy)}
+.num-input.ok{border-color:var(--success);background:#f0faf4}
+.num-input.err{border-color:var(--error);background:#fef2f0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:6px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:#003a7a}
+.btn-sm{padding:7px 16px;font-size:13px}
+.feedback{display:none;padding:10px 14px;border-radius:6px;font-size:14px;margin-top:10px;font-weight:500}
+.feedback.ok{background:#ecfdf5;color:var(--success);border:1px solid #6ee7b7;display:flex;align-items:center;gap:8px}
+.feedback.err{background:#fef2f0;color:var(--error);border:1px solid #fca5a5;display:flex;align-items:center;gap:8px}
+.section-locked{position:relative;user-select:none}
+.lock-overlay{position:absolute;inset:0;background:rgba(240,244,248,.92);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:10;backdrop-filter:blur(3px)}
+.lock-icon{font-size:36px}
+.lock-msg{font-size:15px;color:var(--muted);font-weight:600;text-align:center;max-width:300px}
+.section-locked .card{opacity:.4;pointer-events:none}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.note-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:10px 14px;font-size:13px;color:#92400e;margin:12px 0;display:flex;gap:8px;align-items:start}
+.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;font-size:13px;color:#1e40af;margin:12px 0;display:flex;gap:8px;align-items:start}
+.weight-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0}
+.weight-cell{display:flex;flex-direction:column;gap:4px}
+.weight-cell label{font-size:11px;font-weight:700;color:var(--navy);text-align:center}
+.weight-cell input{border:1.5px solid #dde2ea;border-radius:5px;padding:6px 4px;font-size:13px;font-family:monospace;text-align:center;width:100%}
+.weight-cell input:focus{outline:none;border-color:var(--navy)}
+.weight-cell input.ok{border-color:var(--success);background:#f0faf4}
+.weight-cell input.err{border-color:var(--error);background:#fef2f0}
+.port-results{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+@media(max-width:500px){.port-results{grid-template-columns:1fr}.weight-grid{grid-template-columns:repeat(3,1fr)}}
+.port-stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px}
+.port-stat label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px}
+.port-stat input{border:1.5px solid #dde2ea;border-radius:5px;padding:7px 10px;font-size:14px;font-family:monospace;width:100%}
+.port-stat input:focus{outline:none;border-color:var(--navy)}
+.port-stat input.ok{border-color:var(--success);background:#f0faf4}
+.port-stat input.err{border-color:var(--error);background:#fef2f0}
+.part-divider{display:flex;align-items:center;gap:14px;margin:28px 0 12px}
+.part-divider .label{background:var(--navy);color:#fff;padding:5px 18px;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap}
+.part-divider hr{flex:1;border:none;border-top:2px solid #dde0e6}
+/* AI AGENT */
+.ai-panel{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-top:12px}
+.ai-panel h4{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.agent-bubble{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:#374151;min-height:60px;white-space:pre-wrap}
+.agent-bubble.loading{color:var(--muted);font-style:italic}
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:600px){.agent-grid{grid-template-columns:1fr}}
+.q-area{width:100%;min-height:90px;border:2px solid #dde2ea;border-radius:6px;padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical;transition:border-color .2s}
+.q-area:focus{outline:none;border-color:var(--navy)}
+.q-item{margin-bottom:24px}
+.q-item p{font-size:14px;color:#333;margin-bottom:8px}
+.submit-section{text-align:center;padding:8px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .4s ease forwards}
+select.num-input{appearance:auto;font-family:inherit}
+
+/* ALLOCATION CHART */
+.alloc-wrap{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-top:14px}
+.alloc-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.alloc-meta{display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.alloc-row{display:flex;align-items:center;margin-bottom:7px;gap:8px}
+.alloc-etf{width:36px;font-size:12px;font-weight:700;color:#374151;flex-shrink:0}
+.alloc-bar-track{flex:1;height:22px;background:#f1f5f9;border-radius:3px;position:relative}
+.alloc-zero-line{position:absolute;top:0;width:2px;height:100%;background:#94a3b8;z-index:1}
+.alloc-bar{position:absolute;top:2px;height:18px;border-radius:2px}
+.alloc-pct{width:52px;font-size:12px;font-family:monospace;text-align:right;flex-shrink:0;font-weight:500}
+/* DEVIL'S ADVOCATE */
+.da-panel{background:linear-gradient(135deg,#1e3a5f 0%,#002147 100%);border-radius:8px;padding:16px;margin-top:14px;color:#fff}
+.da-panel h4{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;color:#fff}
+.da-bubble{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.65;color:#e2e8f0;min-height:60px;white-space:pre-wrap}
+.da-bubble.loading{color:rgba(255,255,255,.55);font-style:italic}
+.da-response{margin-top:12px}
+.da-response p{font-size:13px;font-weight:600;margin-bottom:6px;color:#fff}
+
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyAjHL3MztreUN7J7QKW3q_nRbiNoxLwA0E",
+  authDomain:"fina402-60e86.firebaseapp.com",
+  projectId:"fina402-60e86",
+  storageBucket:"fina402-60e86.firebasestorage.app",
+  messagingSenderId:"1058911893067",
+  appId:"1:1058911893067:web:0ab85f8a600d4fb8d2ffce"
+});
+const db = firebase.firestore();
+
+// ═══════════════════════════════════════════
+// ANTHROPIC KEY — loaded from Firebase hub config
+// ═══════════════════════════════════════════
+let ANTHROPIC_KEY = '';
+
+// ═══════════════════════════════════════════
+// ANSWER KEY (embedded — 20 versions)
+// ═══════════════════════════════════════════
+const MC2_ANS = [{"v":1,"start":"Feb 2005","end":"Jan 2010","mu":{"VGT":0.4366,"VHT":0.3972,"VCR":0.0302,"VOX":0.3525,"VFH":-0.4909},"sig":{"VGT":6.0297,"VHT":4.1012,"VCR":6.1499,"VOX":5.183,"VFH":7.5309},"leader":"VGT","min_risk":"VHT","corr":0.637484,"target_ret":0.4366,"TR":{"w":{"VGT":-0.2,"VHT":0.84,"VCR":0.1309,"VOX":0.3542,"VFH":-0.1252},"ret":0.4366,"risk":3.8373,"sharpe":0.016},"MVP":{"w":{"VGT":-0.1582,"VHT":0.898,"VCR":0.0951,"VOX":0.3651,"VFH":-0.2},"ret":0.5173,"risk":3.7939,"sharpe":0.0375},"MS":{"w":{"VGT":0.4055,"VHT":1.0071,"VCR":-0.2,"VOX":-0.0126,"VFH":-0.2},"ret":0.6647,"risk":4.1514,"sharpe":0.0698}},{"v":2,"start":"Oct 2005","end":"Sep 2010","mu":{"VGT":0.521,"VHT":0.2543,"VCR":0.3612,"VOX":0.5738,"VFH":-0.4344},"sig":{"VGT":6.4247,"VHT":4.395,"VCR":6.6541,"VOX":5.4522,"VFH":7.891},"leader":"VOX","min_risk":"VHT","corr":0.619309,"target_ret":0.5738,"TR":{"w":{"VGT":-0.0837,"VHT":0.7053,"VCR":-0.0908,"VOX":0.6692,"VFH":-0.2},"ret":0.5738,"risk":4.2211,"sharpe":0.0471},"MVP":{"w":{"VGT":-0.2,"VHT":0.9216,"VCR":0.0537,"VOX":0.4246,"VFH":-0.2},"ret":0.4801,"risk":4.0529,"sharpe":0.0259},"MS":{"w":{"VGT":0.4,"VHT":-0.2,"VCR":-0.2,"VOX":1.2,"VFH":-0.2},"ret":0.8607,"risk":6.4035,"sharpe":0.0759}},{"v":3,"start":"Jun 2006","end":"May 2011","mu":{"VGT":0.7971,"VHT":0.6144,"VCR":0.6609,"VOX":0.6659,"VFH":-0.4099},"sig":{"VGT":6.3573,"VHT":4.4545,"VCR":6.7039,"VOX":5.2469,"VFH":7.9652},"leader":"VGT","min_risk":"VHT","corr":0.684861,"target_ret":0.7971,"TR":{"w":{"VGT":-0.1696,"VHT":0.8726,"VCR":0.0207,"VOX":0.4608,"VFH":-0.1846},"ret":0.7971,"risk":4.0825,"sharpe":0.1034},"MVP":{"w":{"VGT":-0.1635,"VHT":0.8746,"VCR":0.033,"VOX":0.4559,"VFH":-0.2},"ret":0.8144,"risk":4.081,"sharpe":0.1077},"MS":{"w":{"VGT":0.4417,"VHT":0.6816,"VCR":-0.2,"VOX":0.2767,"VFH":-0.2},"ret":0.9049,"risk":4.4578,"sharpe":0.1189}},{"v":4,"start":"Feb 2007","end":"Jan 2012","mu":{"VGT":0.6317,"VHT":0.3937,"VCR":0.432,"VOX":0.0146,"VFH":-0.7687},"sig":{"VGT":6.6075,"VHT":4.6284,"VCR":6.9847,"VOX":5.3147,"VFH":8.4605},"leader":"VGT","min_risk":"VHT","corr":0.724438,"target_ret":0.6317,"TR":{"w":{"VGT":0.1917,"VHT":0.9907,"VCR":-0.0801,"VOX":0.0977,"VFH":-0.2},"ret":0.6317,"risk":4.3829,"sharpe":0.0586},"MVP":{"w":{"VGT":-0.2,"VHT":0.8928,"VCR":-0.0043,"VOX":0.5115,"VFH":-0.2},"ret":0.3845,"risk":4.1407,"sharpe":0.0023},"MS":{"w":{"VGT":1.0109,"VHT":0.5891,"VCR":-0.2,"VOX":-0.2,"VFH":-0.2},"ret":0.9349,"risk":5.6365,"sharpe":0.0993}},{"v":5,"start":"Oct 2007","end":"Sep 2012","mu":{"VGT":0.5994,"VHT":0.5514,"VCR":0.7324,"VOX":0.2162,"VFH":-0.4684},"sig":{"VGT":6.7472,"VHT":4.6017,"VCR":7.0333,"VOX":5.3296,"VFH":8.524},"leader":"VCR","min_risk":"VHT","corr":0.736025,"target_ret":0.7324,"TR":{"w":{"VGT":-0.118,"VHT":1.005,"VCR":0.1698,"VOX":0.1432,"VFH":-0.2},"ret":0.7324,"risk":4.2996,"sharpe":0.0831},"MVP":{"w":{"VGT":-0.1754,"VHT":0.9056,"VCR":0.0068,"VOX":0.463,"VFH":-0.2},"ret":0.593,"risk":4.1518,"sharpe":0.0525},"MS":{"w":{"VGT":-0.2,"VHT":0.9323,"VCR":0.6677,"VOX":-0.2,"VFH":-0.2},"ret":0.9337,"risk":5.0792,"sharpe":0.11}},{"v":6,"start":"Jun 2008","end":"May 2013","mu":{"VGT":0.7297,"VHT":1.0145,"VCR":1.3031,"VOX":0.5746,"VFH":0.3257},"sig":{"VGT":6.351,"VHT":4.6657,"VCR":6.9432,"VOX":5.1413,"VFH":8.395},"leader":"VCR","min_risk":"VHT","corr":0.74466,"target_ret":1.3031,"TR":{"w":{"VGT":-0.2,"VHT":1.0328,"VCR":0.3506,"VOX":0.0166,"VFH":-0.2},"ret":1.3031,"risk":4.6027,"sharpe":0.2016},"MVP":{"w":{"VGT":0.0969,"VHT":0.8343,"VCR":-0.1726,"VOX":0.433,"VFH":-0.1917},"ret":0.8786,"risk":4.224,"sharpe":0.1192},"MS":{"w":{"VGT":-0.2,"VHT":0.9839,"VCR":0.6161,"VOX":-0.2,"VFH":-0.2},"ret":1.475,"risk":5.0777,"sharpe":0.2166}},{"v":7,"start":"Feb 2009","end":"Jan 2014","mu":{"VGT":1.8411,"VHT":1.6233,"VCR":2.3611,"VOX":1.4606,"VFH":1.6714},"sig":{"VGT":5.166,"VHT":4.0327,"VCR":5.5249,"VOX":4.1651,"VFH":6.5062},"leader":"VCR","min_risk":"VHT","corr":0.644198,"target_ret":2.3611,"TR":{"w":{"VGT":-0.2,"VHT":0.5391,"VCR":1.034,"VOX":-0.173,"VFH":-0.2},"ret":2.3611,"risk":4.7811,"sharpe":0.4154},"MVP":{"w":{"VGT":0.2053,"VHT":0.6183,"VCR":-0.0526,"VOX":0.429,"VFH":-0.2},"ret":1.5498,"risk":3.5837,"sharpe":0.3278},"MS":{"w":{"VGT":-0.2,"VHT":0.5705,"VCR":0.8634,"VOX":-0.0339,"VFH":-0.2},"ret":2.2127,"risk":4.3939,"sharpe":0.4182}},{"v":8,"start":"Oct 2009","end":"Sep 2014","mu":{"VGT":1.3416,"VHT":1.5965,"VCR":1.7305,"VOX":1.1335,"VFH":1.0166},"sig":{"VGT":4.6563,"VHT":3.6361,"VCR":4.7075,"VOX":3.9322,"VFH":4.9469},"leader":"VCR","min_risk":"VHT","corr":0.729512,"target_ret":1.7305,"TR":{"w":{"VGT":-0.1631,"VHT":0.8336,"VCR":0.3712,"VOX":0.1583,"VFH":-0.2},"ret":1.7305,"risk":3.5674,"sharpe":0.38},"MVP":{"w":{"VGT":0.1834,"VHT":0.6577,"VCR":-0.0967,"VOX":0.4048,"VFH":-0.1491},"ret":1.4359,"risk":3.3613,"sharpe":0.3156},"MS":{"w":{"VGT":-0.2,"VHT":0.9435,"VCR":0.5353,"VOX":-0.0788,"VFH":-0.2},"ret":1.8717,"risk":3.8512,"sharpe":0.3886}},{"v":9,"start":"Jun 2010","end":"May 2015","mu":{"VGT":1.3941,"VHT":1.8443,"VCR":1.6426,"VOX":1.1073,"VFH":1.1061},"sig":{"VGT":4.4048,"VHT":3.3679,"VCR":4.47,"VOX":3.7318,"VFH":4.6753},"leader":"VHT","min_risk":"VHT","corr":1.0,"target_ret":1.8443,"TR":{"w":{"VGT":-0.002,"VHT":0.9809,"VCR":0.027,"VOX":0.1942,"VFH":-0.2},"ret":1.8443,"risk":3.2335,"sharpe":0.4544},"MVP":{"w":{"VGT":0.1513,"VHT":0.6968,"VCR":-0.1759,"VOX":0.395,"VFH":-0.0672},"ret":1.5701,"risk":3.1132,"sharpe":0.3839},"MS":{"w":{"VGT":-0.2,"VHT":1.2,"VCR":0.2358,"VOX":-0.0358,"VFH":-0.2},"ret":2.0608,"risk":3.5417,"sharpe":0.476}},{"v":10,"start":"Feb 2011","end":"Jan 2016","mu":{"VGT":0.9406,"VHT":1.4354,"VCR":1.2698,"VOX":0.7671,"VFH":0.7296},"sig":{"VGT":4.2272,"VHT":3.8776,"VCR":4.1757,"VOX":3.8103,"VFH":4.5244},"leader":"VHT","min_risk":"VOX","corr":0.580673,"target_ret":1.4354,"TR":{"w":{"VGT":-0.1837,"VHT":0.7062,"VCR":0.4392,"VOX":0.2384,"VFH":-0.2},"ret":1.4354,"risk":3.6188,"sharpe":0.293},"MVP":{"w":{"VGT":0.1982,"VHT":0.3606,"VCR":0.0146,"VOX":0.4758,"VFH":-0.0491},"ret":1.0516,"risk":3.3775,"sharpe":0.2003},"MS":{"w":{"VGT":-0.2,"VHT":1.2,"VCR":0.4,"VOX":-0.2,"VFH":-0.2},"ret":1.7429,"risk":4.3377,"sharpe":0.3154}},{"v":11,"start":"Oct 2011","end":"Sep 2016","mu":{"VGT":1.4366,"VHT":1.6058,"VCR":1.5368,"VOX":1.0655,"VFH":1.4023},"sig":{"VGT":4.3116,"VHT":3.7062,"VCR":3.9323,"VOX":3.737,"VFH":4.0893},"leader":"VHT","min_risk":"VHT","corr":1.0,"target_ret":1.6058,"TR":{"w":{"VGT":-0.0647,"VHT":0.762,"VCR":0.4545,"VOX":0.0311,"VFH":-0.1828},"ret":1.6058,"risk":3.6181,"sharpe":0.3402},"MVP":{"w":{"VGT":-0.005,"VHT":0.3035,"VCR":-0.0061,"VOX":0.4674,"VFH":0.2402},"ret":1.3056,"risk":3.1653,"sharpe":0.294},"MS":{"w":{"VGT":-0.0688,"VHT":0.7845,"VCR":0.4754,"VOX":0.0089,"VFH":-0.2},"ret":1.6205,"risk":3.6605,"sharpe":0.3403}},{"v":12,"start":"Jun 2012","end":"May 2017","mu":{"VGT":1.4548,"VHT":1.4632,"VCR":1.3871,"VOX":0.9571,"VFH":1.3845},"sig":{"VGT":3.6705,"VHT":3.7731,"VCR":3.4178,"VOX":3.8768,"VFH":3.6931},"leader":"VHT","min_risk":"VCR","corr":0.764466,"target_ret":1.4632,"TR":{"w":{"VGT":0.403,"VHT":0.3351,"VCR":0.0584,"VOX":-0.0559,"VFH":0.2594},"ret":1.4632,"risk":3.2954,"sharpe":0.3302},"MVP":{"w":{"VGT":0.2342,"VHT":0.0727,"VCR":0.1186,"VOX":0.3279,"VFH":0.2466},"ret":1.2668,"risk":2.9537,"sharpe":0.3019},"MS":{"w":{"VGT":0.386,"VHT":0.3088,"VCR":0.0644,"VOX":-0.0174,"VFH":0.2581},"ret":1.4435,"risk":3.2331,"sharpe":0.3305}},{"v":13,"start":"Feb 2013","end":"Jan 2018","mu":{"VGT":1.6942,"VHT":1.4251,"VCR":1.3888,"VOX":0.7087,"VFH":1.4304},"sig":{"VGT":3.7173,"VHT":3.6529,"VCR":3.4491,"VOX":3.6537,"VFH":3.7466},"leader":"VGT","min_risk":"VCR","corr":0.777967,"target_ret":1.6942,"TR":{"w":{"VGT":0.7248,"VHT":0.2922,"VCR":-0.2,"VOX":-0.0912,"VFH":0.2742},"ret":1.6942,"risk":3.4955,"sharpe":0.3774},"MVP":{"w":{"VGT":0.227,"VHT":0.1742,"VCR":-0.0097,"VOX":0.3876,"VFH":0.2208},"ret":1.21,"risk":2.8414,"sharpe":0.2939},"MS":{"w":{"VGT":0.7779,"VHT":0.3011,"VCR":-0.2,"VOX":-0.1536,"VFH":0.2746},"ret":1.7532,"risk":3.6459,"sharpe":0.378}},{"v":14,"start":"Oct 2013","end":"Sep 2018","mu":{"VGT":1.709,"VHT":1.2712,"VCR":1.1612,"VOX":0.4503,"VFH":1.1173},"sig":{"VGT":3.8688,"VHT":3.6265,"VCR":3.4187,"VOX":3.5254,"VFH":3.7638},"leader":"VGT","min_risk":"VCR","corr":0.774605,"target_ret":1.709,"TR":{"w":{"VGT":0.8127,"VHT":0.3541,"VCR":-0.2,"VOX":-0.0977,"VFH":0.1308},"ret":1.709,"risk":3.6875,"sharpe":0.3618},"MVP":{"w":{"VGT":0.1427,"VHT":0.187,"VCR":0.0338,"VOX":0.4127,"VFH":0.2238},"ret":0.9567,"risk":2.8105,"sharpe":0.207},"MS":{"w":{"VGT":1.0313,"VHT":0.3408,"VCR":-0.2,"VOX":-0.2,"VFH":0.028},"ret":1.9046,"risk":4.1344,"sharpe":0.37}},{"v":15,"start":"Jun 2014","end":"May 2019","mu":{"VGT":1.4159,"VHT":0.8669,"VCR":0.932,"VOX":0.2108,"VFH":0.8717},"sig":{"VGT":4.6373,"VHT":4.0579,"VCR":4.1219,"VOX":3.997,"VFH":4.5801},"leader":"VGT","min_risk":"VOX","corr":0.560706,"target_ret":1.4159,"TR":{"w":{"VGT":0.8178,"VHT":0.4468,"VCR":-0.1913,"VOX":-0.1707,"VFH":0.0973},"ret":1.4159,"risk":4.4024,"sharpe":0.2364},"MVP":{"w":{"VGT":0.1379,"VHT":0.4218,"VCR":-0.2,"VOX":0.4915,"VFH":0.1488},"ret":0.6078,"risk":3.4495,"sharpe":0.0675},"MS":{"w":{"VGT":1.2,"VHT":0.2667,"VCR":-0.2,"VOX":-0.2,"VFH":-0.0667},"ret":1.6436,"risk":5.0152,"sharpe":0.253}},{"v":16,"start":"Feb 2015","end":"Jan 2020","mu":{"VGT":1.7664,"VHT":0.8468,"VCR":1.076,"VOX":0.5193,"VFH":1.0438},"sig":{"VGT":4.6865,"VHT":4.1377,"VCR":4.0658,"VOX":4.0003,"VFH":4.643},"leader":"VGT","min_risk":"VOX","corr":0.578575,"target_ret":1.7664,"TR":{"w":{"VGT":1.0081,"VHT":0.1254,"VCR":-0.2,"VOX":-0.0482,"VFH":0.1147},"ret":1.7664,"risk":4.6515,"sharpe":0.2991},"MVP":{"w":{"VGT":0.0918,"VHT":0.3803,"VCR":-0.0714,"VOX":0.4889,"VFH":0.1104},"ret":0.7765,"risk":3.5324,"sharpe":0.1137},"MS":{"w":{"VGT":1.2,"VHT":-0.0761,"VCR":-0.0608,"VOX":-0.2,"VFH":0.1369},"ret":2.0288,"risk":5.2264,"sharpe":0.3164}},{"v":17,"start":"Oct 2015","end":"Sep 2020","mu":{"VGT":2.1709,"VHT":1.0813,"VCR":1.4436,"VOX":0.7866,"VFH":0.7489},"sig":{"VGT":5.4038,"VHT":4.3528,"VCR":5.8554,"VOX":4.998,"VFH":5.8952},"leader":"VGT","min_risk":"VHT","corr":0.688814,"target_ret":2.1709,"TR":{"w":{"VGT":0.9816,"VHT":0.5068,"VCR":-0.2,"VOX":-0.0883,"VFH":-0.2},"ret":2.1709,"risk":4.919,"sharpe":0.3651},"MVP":{"w":{"VGT":0.1443,"VHT":0.7092,"VCR":-0.2,"VOX":0.382,"VFH":-0.0356},"ret":1.0653,"risk":4.0145,"sharpe":0.172},"MS":{"w":{"VGT":1.2,"VHT":0.4,"VCR":-0.2,"VOX":-0.2,"VFH":-0.2},"ret":2.4417,"risk":5.3787,"sharpe":0.3842}},{"v":18,"start":"Jun 2016","end":"May 2021","mu":{"VGT":2.2861,"VHT":1.24,"VCR":1.8097,"VOX":0.9807,"VFH":1.466},"sig":{"VGT":5.262,"VHT":4.2422,"VCR":5.9586,"VOX":5.096,"VFH":6.2424},"leader":"VGT","min_risk":"VHT","corr":0.70434,"target_ret":2.2861,"TR":{"w":{"VGT":1.0688,"VHT":0.3749,"VCR":-0.2,"VOX":-0.2,"VFH":-0.0437},"ret":2.2861,"risk":4.9519,"sharpe":0.3859},"MVP":{"w":{"VGT":0.18,"VHT":0.7693,"VCR":-0.2,"VOX":0.3189,"VFH":-0.0682},"ret":1.2162,"risk":3.9567,"sharpe":0.2126},"MS":{"w":{"VGT":1.2,"VHT":0.2442,"VCR":-0.2,"VOX":-0.2,"VFH":-0.0442},"ret":2.4232,"risk":5.2148,"sharpe":0.3928}},{"v":19,"start":"Feb 2017","end":"Jan 2022","mu":{"VGT":2.2649,"VHT":1.2826,"VCR":1.6999,"VOX":0.6732,"VFH":1.1743},"sig":{"VGT":5.5121,"VHT":4.4453,"VCR":6.1755,"VOX":5.133,"VFH":6.1452},"leader":"VGT","min_risk":"VHT","corr":0.728178,"target_ret":2.2649,"TR":{"w":{"VGT":0.9515,"VHT":0.5337,"VCR":-0.2,"VOX":-0.2,"VFH":-0.0852},"ret":2.2649,"risk":4.9973,"sharpe":0.3782},"MVP":{"w":{"VGT":0.1128,"VHT":0.7628,"VCR":-0.2,"VOX":0.3822,"VFH":-0.0578},"ret":1.0834,"risk":4.1879,"sharpe":0.1691},"MS":{"w":{"VGT":1.2,"VHT":0.3971,"VCR":-0.2,"VOX":-0.2,"VFH":-0.1971},"ret":2.5212,"risk":5.4506,"sharpe":0.3938}},{"v":20,"start":"Oct 2017","end":"Sep 2022","mu":{"VGT":1.475,"VHT":0.8708,"VCR":1.1885,"VOX":0.1114,"VFH":0.6209},"sig":{"VGT":6.506,"VHT":4.6356,"VCR":7.1894,"VOX":5.8952,"VFH":6.5881},"leader":"VGT","min_risk":"VHT","corr":0.759494,"target_ret":1.475,"TR":{"w":{"VGT":0.7711,"VHT":0.8289,"VCR":-0.2,"VOX":-0.2,"VFH":-0.2},"ret":1.475,"risk":5.2496,"sharpe":0.2095},"MVP":{"w":{"VGT":-0.0395,"VHT":1.0032,"VCR":-0.2,"VOX":0.1808,"VFH":0.0555},"ret":0.6322,"risk":4.4538,"sharpe":0.0577},"MS":{"w":{"VGT":1.2,"VHT":0.4,"VCR":-0.2,"VOX":-0.2,"VFH":-0.2},"ret":1.7341,"risk":6.1605,"sharpe":0.2206}}];
+
+// Excel filenames by version number
+const EXCEL_FILES = {"1":"MC2_v01_Feb2005-Jan2010.xlsx","2":"MC2_v02_Oct2005-Sep2010.xlsx","3":"MC2_v03_Jun2006-May2011.xlsx","4":"MC2_v04_Feb2007-Jan2012.xlsx","5":"MC2_v05_Oct2007-Sep2012.xlsx","6":"MC2_v06_Jun2008-May2013.xlsx","7":"MC2_v07_Feb2009-Jan2014.xlsx","8":"MC2_v08_Oct2009-Sep2014.xlsx","9":"MC2_v09_Jun2010-May2015.xlsx","10":"MC2_v10_Feb2011-Jan2016.xlsx","11":"MC2_v11_Oct2011-Sep2016.xlsx","12":"MC2_v12_Jun2012-May2017.xlsx","13":"MC2_v13_Feb2013-Jan2018.xlsx","14":"MC2_v14_Oct2013-Sep2018.xlsx","15":"MC2_v15_Jun2014-May2019.xlsx","16":"MC2_v16_Feb2015-Jan2020.xlsx","17":"MC2_v17_Oct2015-Sep2020.xlsx","18":"MC2_v18_Jun2016-May2021.xlsx","19":"MC2_v19_Feb2017-Jan2022.xlsx","20":"MC2_v20_Oct2017-Sep2022.xlsx"};
+
+const ETFS = ['VGT','VHT','VCR','VOX','VFH'];
+const ETF_DESC = {VGT:'Info Tech',VHT:'Health Care',VCR:'Cons. Disc.',VOX:'Telecom',VFH:'Financials'};
+
+let _sec=1, _grp=1, gNum=1, A=null;
+let p1ok=false, p2ok=false;
+let _submitted=false, _resubmitBlocked=false;
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function resolveGroupAndStart(){
+  const params = new URLSearchParams(window.location.search);
+  _sec = parseInt(params.get('seccion'))||1;
+  _grp = parseInt(params.get('grupo'))||1;
+  const gnEl = document.getElementById('groupNum');
+  if(gnEl) gnEl.textContent = 'Sec '+_sec+' · Grp '+_grp;
+
+  // Load hub config: gNum offset + Anthropic API key
+  let offset = 0;
+  try {
+    const hub = await db.collection('minicase_hub').doc('config').get();
+    if(hub.exists){
+      const cfg = hub.data();
+      // Read API key stored by professor in hub settings
+      if(cfg.anthropicKey) ANTHROPIC_KEY = cfg.anthropicKey;
+      const mc2 = cfg.minicases[1]; // index 1 = Minicase 2
+      if(mc2 && mc2.sections){
+        const secs = mc2.sections;
+        for(let s=0; s<_sec-1 && s<secs.length; s++) offset += (secs[s].groups||5);
+      }
+    }
+  } catch(e){ /* use offset=0 */ }
+  gNum = ((offset + _grp - 1) % 20) + 1;
+  A = MC2_ANS[gNum-1];
+
+  // Check if already submitted
+  try {
+    const snap = await db.collection('minicase_submissions').doc('mc2_sec'+_sec+'_grp'+_grp).get();
+    if(snap.exists){ _submitted=true; _resubmitBlocked=true; showAlreadySubmitted(snap.data()); return; }
+  } catch(e){}
+
+  buildTeamGrid();
+  buildDataCard();
+  document.getElementById('loading').style.display='none';
+  document.getElementById('mc-body').style.display='block';
+}
+
+function showAlreadySubmitted(d){
+  document.getElementById('loading').innerHTML = `
+    <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;padding:28px;text-align:center;color:#065f46;max-width:480px;margin:0 auto">
+      <div style="font-size:40px;margin-bottom:10px">✅</div>
+      <strong style="font-size:17px">This group has already submitted Minicase 2.</strong><br>
+      <span style="font-size:13px;opacity:.75">Submitted on ${new Date(d.submittedAt).toLocaleString('en-US',{timeZone:'America/Los_Angeles'})}</span><br>
+      <span style="font-size:12px;color:#065f46;margin-top:8px;display:block">Contact Prof. Ceballos to allow resubmission.</span>
+    </div>`;
+}
+
+function buildTeamGrid(){
+  const g = document.getElementById('teamGrid');
+  for(let i=1;i<=5;i++){
+    const inp = document.createElement('input');
+    inp.className='team-input'; inp.type='text'; inp.id='tm'+i;
+    inp.placeholder='Student '+i+' full name'; inp.autocomplete='off';
+    g.appendChild(inp);
+  }
+}
+
+function buildDataCard(){
+  // Version info
+  document.getElementById('dataWindow').textContent = A.start+' — '+A.end;
+  document.getElementById('versionBadge').textContent = 'Version '+gNum;
+  // Excel download hint
+  document.getElementById('dlHint').textContent = EXCEL_FILES[gNum];
+}
+
+function downloadExcel(){
+  const fname = EXCEL_FILES[gNum];
+  const url = './MC2/'+fname;
+  const a = document.createElement('a');
+  a.href=url; a.download=fname; a.click();
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function nearAbs(a,b,tol){return Math.abs(a-b)<=tol;}
+function nearRel(a,b,pct){return b===0?Math.abs(a)<1e-6:Math.abs(a-b)/Math.abs(b)<=pct;}
+function showFB(id,ok,msg){
+  const el=document.getElementById(id);
+  el.className='feedback '+(ok?'ok':'err');
+  el.innerHTML=(ok?'✅ ':'❌ ')+msg;
+  el.style.display='flex';
+}
+function unlockSection(wrapId, overlayId){
+  const wrapper=document.getElementById(wrapId);
+  const overlay=document.getElementById(overlayId);
+  overlay.style.transition='opacity .5s'; overlay.style.opacity='0';
+  setTimeout(()=>{
+    wrapper.classList.remove('section-locked');
+    overlay.remove();
+    wrapper.classList.add('fade-in');
+  },500);
+}
+
+// ═══════════════════════════════════════════
+// PART 1 — Statistical Gate
+// ═══════════════════════════════════════════
+let q1a_ok=false, q1b_ok=false, q1c_ok=false;
+
+function validateQ1a(){
+  const val = document.getElementById('q1a_input').value.trim().toUpperCase();
+  const ok  = val === A.leader;
+  document.getElementById('q1a_input').className = 'num-input '+(ok?'ok':'err');
+  if(ok){ q1a_ok=true; showFB('q1a_fb',true,'Correct! '+A.leader+' had the highest mean monthly return ('+A.mu[A.leader].toFixed(4)+'% / month).'); }
+  else  { showFB('q1a_fb',false,'Not correct. Use the Mean row (row 5) in the Stats sheet. Enter the ETF ticker symbol, e.g. VGT.'); }
+  tryUnlockPart2();
+}
+
+function validateQ1b(){
+  const val = parseFloat(document.getElementById('q1b_input').value.trim());
+  if(isNaN(val)){ showFB('q1b_fb',false,'Please enter a numeric value (standard deviation in %).'); return; }
+  const exp = A.sig[A.min_risk];
+  const ok  = nearAbs(val, exp, 0.05);
+  document.getElementById('q1b_input').className = 'num-input '+(ok?'ok':'err');
+  if(ok){ q1b_ok=true; showFB('q1b_fb',true,'Correct! '+A.min_risk+' had the lowest monthly risk (σ ≈ '+exp.toFixed(4)+'%).'); }
+  else  { showFB('q1b_fb',false,'Not quite. Look at row 6 (Std Dev σ) in the Stats sheet and find the smallest value. Enter it with 4 decimal places.'); }
+  tryUnlockPart2();
+}
+
+function validateQ1c(){
+  const val = parseFloat(document.getElementById('q1c_input').value.trim());
+  if(isNaN(val)){ showFB('q1c_fb',false,'Please enter a numeric value for the correlation.'); return; }
+  const exp = A.corr;
+  const ok  = nearAbs(val, exp, 0.005);
+  document.getElementById('q1c_input').className = 'num-input '+(ok?'ok':'err');
+  if(ok){ q1c_ok=true; showFB('q1c_fb',true,'Correct! The correlation between '+A.leader+' and '+A.min_risk+' is ρ ≈ '+exp.toFixed(4)+'.'); }
+  else  { showFB('q1c_fb',false,'Not quite. Make sure you used =CORREL() in Excel with the columns for '+A.leader+' and '+A.min_risk+' (rows 5:64 in the Returns sheet).'); }
+  tryUnlockPart2();
+}
+
+function tryUnlockPart2(){
+  if(q1a_ok && q1b_ok && q1c_ok && !p1ok){
+    p1ok=true;
+    setTimeout(()=>unlockSection('part2Wrapper','part2Lock'),400);
+  }
+}
+
+// ═══════════════════════════════════════════
+// PART 2 — Portfolio Results
+// ═══════════════════════════════════════════
+let q2a_ok=false, q2b_ok=false, q2c_ok=false;
+
+function validateQ2a(){
+  const ret  = parseFloat(document.getElementById('q2a_ret').value);
+  const risk = parseFloat(document.getElementById('q2a_risk').value);
+  if(isNaN(ret)||isNaN(risk)){ showFB('q2a_fb',false,'Please fill in both Portfolio Return and Portfolio Risk.'); return; }
+  const retOk  = nearAbs(ret,  A.TR.ret,  0.10);
+  const riskOk = nearAbs(risk, A.TR.risk, 0.15);
+  colorInput('q2a_ret',  retOk);
+  colorInput('q2a_risk', riskOk);
+  if(retOk && riskOk){ q2a_ok=true; showFB('q2a_fb',true,'Correct! Target-return portfolio verified (Rp ≈ '+A.TR.ret.toFixed(4)+'%, σ ≈ '+A.TR.risk.toFixed(4)+'%).'); showAllocationChart(A.TR.w,'TR','q2a_chart'); }
+  else {
+    const msgs=[];
+    if(!retOk)  msgs.push('Return is off — did you set the Rp = '+A.target_ret.toFixed(4)+'% constraint?');
+    if(!riskOk) msgs.push('Risk is off — recheck your Solver setup.');
+    showFB('q2a_fb',false,msgs.join(' · '));
+  }
+  tryUnlockPart3();
+}
+
+function validateQ2b(){
+  const ret  = parseFloat(document.getElementById('q2b_ret').value);
+  const risk = parseFloat(document.getElementById('q2b_risk').value);
+  if(isNaN(ret)||isNaN(risk)){ showFB('q2b_fb',false,'Please fill in both Portfolio Return and Portfolio Risk.'); return; }
+  const retOk  = nearAbs(ret,  A.MVP.ret,  0.15);
+  const riskOk = nearAbs(risk, A.MVP.risk, 0.15);
+  colorInput('q2b_ret',  retOk);
+  colorInput('q2b_risk', riskOk);
+  if(retOk && riskOk){ q2b_ok=true; showFB('q2b_fb',true,'Correct! Minimum-variance portfolio verified (Rp ≈ '+A.MVP.ret.toFixed(4)+'%, σ ≈ '+A.MVP.risk.toFixed(4)+'%).'); showAllocationChart(A.MVP.w,'MVP','q2b_chart'); }
+  else {
+    const msgs=[];
+    if(!retOk)  msgs.push('Return is off — for the MVP you minimize risk only, no return constraint.');
+    if(!riskOk) msgs.push('Risk is off — make sure you set the Objective to Minimize B15 (σp).');
+    showFB('q2b_fb',false,msgs.join(' · '));
+  }
+  tryUnlockPart3();
+}
+
+function validateQ2c(){
+  const sharpe = parseFloat(document.getElementById('q2c_sharpe').value);
+  if(isNaN(sharpe)){ showFB('q2c_fb',false,'Please enter the Sharpe Ratio from cell B16.'); return; }
+  const ok = nearAbs(sharpe, A.MS.sharpe, 0.015);
+  colorInput('q2c_sharpe', ok);
+  if(ok){ q2c_ok=true; showFB('q2c_fb',true,'Correct! Max Sharpe Ratio verified (S ≈ '+A.MS.sharpe.toFixed(4)+'/month). Note: weights may differ slightly — validate against the Sharpe value.'); showAllocationChart(A.MS.w,'MS','q2c_chart'); }
+  else  { showFB('q2c_fb',false,'Sharpe Ratio is off. Make sure you: (1) set Objective to Maximize B16, (2) enabled Multistart in Solver options (GRG Nonlinear → Use Multistart, Population 100).'); }
+  tryUnlockPart3();
+}
+
+function colorInput(id, ok){
+  const el=document.getElementById(id);
+  if(el) el.className=(el.tagName==='INPUT'?'num-input ':'')+(ok?'ok':'err');
+}
+
+function tryUnlockPart3(){
+  if(q2a_ok && q2b_ok && q2c_ok && !p2ok){
+    p2ok=true;
+    setTimeout(()=>unlockSection('part3Wrapper','part3Lock'),400);
+  }
+}
+
+// ═══════════════════════════════════════════
+// PART 3 — AI Dual Agent
+// ═══════════════════════════════════════════
+async function callAgent(agentName, systemPrompt, userMsg){
+  if(!ANTHROPIC_KEY || ANTHROPIC_KEY.includes('REPLACE')){
+    return '⚠️ API key not configured. Please ask your professor to configure the AI agent.';
+  }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model:'claude-haiku-4-5',
+        max_tokens:400,
+        system: systemPrompt,
+        messages:[{role:'user',content:userMsg}]
+      })
+    });
+    if(!res.ok){ const e=await res.json(); return '⚠️ API error: '+(e.error?.message||res.status); }
+    const data = await res.json();
+    return data.content[0].text;
+  } catch(e){ return '⚠️ Network error: '+e.message; }
+}
+
+function portfolioContext(){
+  return `
+Group Version: ${gNum} | Sample Period: ${A.start} to ${A.end}
+ETFs: VGT (Info Tech), VHT (Health Care), VCR (Consumer Disc.), VOX (Telecom), VFH (Financials)
+Monthly Risk-Free Rate: 0.375% (4.5% annual)
+
+ETF Mean Monthly Returns (%): ${ETFS.map(e=>e+': '+A.mu[e].toFixed(4)).join(', ')}
+ETF Monthly Std Devs (%): ${ETFS.map(e=>e+': '+A.sig[e].toFixed(4)).join(', ')}
+Highest-return ETF: ${A.leader} | Lowest-risk ETF: ${A.min_risk}
+Correlation (${A.leader}–${A.min_risk}): ${A.corr.toFixed(4)}
+Target return for Portfolio A: ${A.target_ret.toFixed(4)}%/month
+
+Portfolio A (Target Return = ${A.target_ret.toFixed(4)}%):
+  Weights: ${ETFS.map(e=>e+': '+(A.TR.w[e]*100).toFixed(1)+'%').join(', ')}
+  Return: ${A.TR.ret.toFixed(4)}%/mo | Risk: ${A.TR.risk.toFixed(4)}%/mo | Sharpe: ${A.TR.sharpe.toFixed(4)}
+
+Portfolio B (Minimum Variance):
+  Weights: ${ETFS.map(e=>e+': '+(A.MVP.w[e]*100).toFixed(1)+'%').join(', ')}
+  Return: ${A.MVP.ret.toFixed(4)}%/mo | Risk: ${A.MVP.risk.toFixed(4)}%/mo | Sharpe: ${A.MVP.sharpe.toFixed(4)}
+
+Portfolio C (Maximum Sharpe):
+  Weights: ${ETFS.map(e=>e+': '+(A.MS.w[e]*100).toFixed(1)+'%').join(', ')}
+  Return: ${A.MS.ret.toFixed(4)}%/mo | Risk: ${A.MS.risk.toFixed(4)}%/mo | Sharpe: ${A.MS.sharpe.toFixed(4)}
+`;
+}
+
+// ═══════════════════════════════════════════
+// ALLOCATION CHART
+// ═══════════════════════════════════════════
+function showAllocationChart(weights, portType, containerId){
+  const container = document.getElementById(containerId);
+  if(!container || !A) return;
+  const portData = portType==='TR' ? A.TR : portType==='MVP' ? A.MVP : A.MS;
+  const portNames = {TR:'Portfolio A — Target Return', MVP:'Portfolio B — Minimum Variance', MS:'Portfolio C — Maximum Sharpe'};
+  const colors = {VGT:'#3B82F6', VHT:'#10B981', VCR:'#F59E0B', VOX:'#8B5CF6', VFH:'#EF4444'};
+  const RANGE = 1.4; const ZERO_PCT = (0.2/RANGE)*100;
+  const rows = ETFS.map(etf=>{
+    const w = weights[etf];
+    const wPct = (w*100).toFixed(1);
+    const isShort = w < 0;
+    const barLeft = w>=0 ? ZERO_PCT : ((w+0.2)/RANGE)*100;
+    const barWidth = (Math.abs(w)/RANGE)*100;
+    const barStyle = isShort
+      ? 'left:'+barLeft.toFixed(2)+'%;width:'+barWidth.toFixed(2)+'%;background:repeating-linear-gradient(45deg,'+colors[etf]+'50,'+colors[etf]+'50 4px,transparent 4px,transparent 8px);border:1.5px solid '+colors[etf]
+      : 'left:'+barLeft.toFixed(2)+'%;width:'+barWidth.toFixed(2)+'%;background:'+colors[etf];
+    return '<div class="alloc-row">'
+      +'<span class="alloc-etf">'+etf+'</span>'
+      +'<div class="alloc-bar-track">'
+      +'<div class="alloc-zero-line" style="left:'+ZERO_PCT.toFixed(2)+'%"></div>'
+      +'<div class="alloc-bar" style="'+barStyle+'"></div>'
+      +'</div>'
+      +'<span class="alloc-pct" style="color:'+(isShort?'#DC2626':'#059669')+'">'+(isShort?'':'+')+(w*100).toFixed(1)+'%</span>'
+      +'</div>';
+  }).join('');
+  container.innerHTML = '<div class="alloc-wrap fade-in">'
+    +'<div class="alloc-title">📊 '+portNames[portType]+' — Optimal Weights</div>'
+    +'<div class="alloc-meta">'
+    +'<span>Rp: <strong>'+portData.ret.toFixed(4)+'%</strong>/mo</span>'
+    +'<span>σ: <strong>'+portData.risk.toFixed(4)+'%</strong>/mo</span>'
+    +'<span>Sharpe: <strong>'+portData.sharpe.toFixed(4)+'</strong></span>'
+    +'</div>'+rows
+    +'<div style="display:flex;padding-left:44px;margin-top:6px">'
+    +'<span style="flex:1;font-size:10px;color:#94a3b8">−20%</span>'
+    +'<span style="flex:1;font-size:10px;color:#94a3b8;text-align:center">0%</span>'
+    +'<span style="flex:1;font-size:10px;color:#94a3b8;text-align:right">+120%</span>'
+    +'</div></div>';
+}
+
+// ═══════════════════════════════════════════
+// PART 3 — Devil's Advocate (Prof. Ceballos)
+// ═══════════════════════════════════════════
+const Q3_QUESTIONS = {
+  a: 'Compare your three portfolios (A, B, C). Which one best balances return and risk for a moderate investor? Justify your choice using the specific numbers.',
+  b: 'The Minimum-Variance Portfolio allows short positions (weights below 0, down to -20%). Which ETF does your MVP short the most? Why do you think the optimizer chose to short it?',
+  c: 'Portfolio C (Maximum Sharpe) offers the best risk-adjusted return of your three portfolios. Does that mean every rational investor should choose it? Explain what the Sharpe ratio actually measures.'
+};
+
+async function runDevilsAdvocate(qId){
+  var studentEl = document.getElementById('q3'+qId+'_student');
+  var studentText = studentEl.value.trim();
+  if(studentText.length<40){ alert('Please write a more complete answer (at least 40 characters) before submitting.'); return; }
+
+  var ctx = portfolioContext();
+  var daSystem = `You are Prof. Ceballos, a Finance professor at the University of San Diego, playing devil's advocate.
+Read the student group's answer and challenge it in exactly 2-3 sharp sentences.
+End with ONE pointed question that forces them to think harder or defend their reasoning.
+Do NOT compliment their answer. Do NOT give lengthy explanations. Be direct and skeptical.
+If they missed a key insight or used imprecise language, call it out directly.
+Speak like a professor who is not satisfied yet. Push them to think deeper.
+
+Portfolio data for this group:
+` + ctx;
+
+  var userMsg = 'Question asked: "' + Q3_QUESTIONS[qId] + '" Student group\'s answer: "' + studentText + '" Challenge their reasoning.';
+
+  var bubbleEl = document.getElementById('q3'+qId+'_da_bubble');
+  var panelEl  = document.getElementById('q3'+qId+'_da_panel');
+  bubbleEl.className = 'da-bubble loading';
+  bubbleEl.textContent = '\uD83C\uDFAD Prof. Ceballos is reading your answer…';
+  panelEl.style.display = 'block';
+
+  var reply = await callAgent('Prof. Ceballos', daSystem, userMsg);
+  bubbleEl.className = 'da-bubble';
+  bubbleEl.textContent = reply;
+}
+
+// ═══════════════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════════════
+async function submitToFirebase(){
+  if(_submitted && _resubmitBlocked){ alert('This group has already submitted. Contact your professor to allow resubmission.'); return; }
+  var btn = document.getElementById('submitBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving…';
+
+  var team = [1,2,3,4,5].map(function(i){ return (document.getElementById('tm'+i)||{}).value||''; }).map(function(v){ return v.trim(); }).filter(Boolean);
+
+  var data = {
+    section: _sec, group: _grp, gNum: gNum,
+    team: team,
+    submittedAt: new Date().toISOString(),
+    p1: {
+      q1a: document.getElementById('q1a_input').value,
+      q1b: document.getElementById('q1b_input').value,
+      q1c: document.getElementById('q1c_input').value
+    },
+    p2: {
+      q2a_ret:    document.getElementById('q2a_ret').value,
+      q2a_risk:   document.getElementById('q2a_risk').value,
+      q2b_ret:    document.getElementById('q2b_ret').value,
+      q2b_risk:   document.getElementById('q2b_risk').value,
+      q2c_sharpe: document.getElementById('q2c_sharpe').value,
+      q2c_ret:    document.getElementById('q2c_ret').value,
+      q2c_risk:   document.getElementById('q2c_risk').value
+    },
+    p3: {
+      q3a_student:  document.getElementById('q3a_student').value,
+      q3a_response: document.getElementById('q3a_response').value,
+      q3b_student:  document.getElementById('q3b_student').value,
+      q3b_response: document.getElementById('q3b_response').value,
+      q3c_student:  document.getElementById('q3c_student').value,
+      q3c_response: document.getElementById('q3c_response').value
+    }
+  };
+
+  try {
+    await db.collection('minicase_submissions').doc('mc2_sec'+_sec+'_grp'+_grp).set(data);
+    _submitted=true; _resubmitBlocked=true;
+    document.getElementById('submitResult').innerHTML=
+      '<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;padding:20px;text-align:center;color:#065f46">'
+      +'<div style="font-size:32px;margin-bottom:8px">✅</div>'
+      +'<strong style="font-size:16px">Submitted successfully!</strong><br>'
+      +'<span style="font-size:13px;opacity:.75">Saved on '+new Date().toLocaleString('en-US',{timeZone:'America/Los_Angeles'})+'</span>'
+      +'</div>';
+    btn.style.display='none';
+  } catch(e){
+    btn.disabled=false; btn.innerHTML='📤 SUBMIT';
+    document.getElementById('submitResult').innerHTML='<div style="color:#c53030;background:#fff5f5;border:1px solid #feb2b2;border-radius:6px;padding:12px;font-size:13px">⚠️ Save failed: '+e.message+'</div>';
+  }
+}
+
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', resolveGroupAndStart);
+} else {
+  resolveGroupAndStart();
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="hdr-top">
+    <div class="hdr-logo">🎓 UNIVERSITY OF SAN DIEGO<br>Knauss School of Business</div>
+    <div class="hdr-title">
+      <h1>Mini Case 2: Portfolio Optimization</h1>
+      <p>FINA 402 — Investments &nbsp;|&nbsp; Fall 2026</p>
+    </div>
+    <div class="group-badge" id="groupNum">Loading…</div>
+  </div>
+</header>
+
+<main>
+
+<div id="loading" style="text-align:center;padding:40px;color:var(--muted)">
+  <div style="width:32px;height:32px;border:3px solid #dde0e6;border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div>
+  Loading your group's version…
+</div>
+
+<div id="mc-body" style="display:none">
+
+<!-- TEAM MEMBERS -->
+<div class="card">
+  <h2><span class="badge">👥</span> Team Members</h2>
+  <div class="team-grid" id="teamGrid"></div>
+</div>
+
+<!-- INSTRUCTIONS -->
+<div class="card">
+  <h2><span class="badge">📋</span> Instructions</h2>
+  <ol style="padding-left:20px;line-height:2;font-size:14px;color:#444">
+    <li>This is an <strong>in-class evaluation</strong>. You must attend to participate and submit.</li>
+    <li>Work <strong>only with your assigned group</strong>. Each group has a <strong>different 5-year data window</strong>.</li>
+    <li><strong>One submission per group</strong>. Coordinate before submitting.</li>
+    <li>Complete <strong>Part 1</strong> using Excel (AVERAGE, STDEV, CORREL). It must be verified before Part 2 unlocks.</li>
+    <li>Complete <strong>Part 2</strong> using Excel Solver (follow the step-by-step instructions in your Excel file).</li>
+    <li>Complete <strong>Part 3</strong> by answering each question and engaging with <strong>Prof. Ceballos's</strong> devil's advocate challenges. You must defend or refine your reasoning.</li>
+    <li>Submit through this page before the end of class.</li>
+  </ol>
+  <div class="note-box" style="margin-top:14px">
+    ⚠️ <strong>Attendance rule:</strong> If someone in your group is not physically present, they individually receive a grade of 0, regardless of the group's submission.
+  </div>
+</div>
+
+<!-- YOUR DATA -->
+<div class="card">
+  <h2><span class="badge">📈</span> Your Data</h2>
+  <div class="window-box">
+    <div>
+      <div class="wlabel">Five Sector ETFs</div>
+      <div class="etf-chips">
+        <span class="etf-chip">VGT — Info Tech</span>
+        <span class="etf-chip">VHT — Health Care</span>
+        <span class="etf-chip">VCR — Consumer Disc.</span>
+        <span class="etf-chip">VOX — Telecom</span>
+        <span class="etf-chip">VFH — Financials</span>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="wlabel">Your 5-Year Window</div>
+      <div class="wval" id="dataWindow">—</div>
+      <div style="font-size:12px;opacity:.7;margin-top:2px" id="versionBadge"></div>
+    </div>
+  </div>
+  <div class="note-box">
+    📂 <span>Download your group's Excel file. It contains 60 months of returns, a Stats sheet with pre-filled AVERAGE and STDEV formulas, and an Optimizer sheet for Solver.</span>
+    <div style="margin-top:10px">
+      <button onclick="downloadExcel()" style="display:inline-flex;align-items:center;gap:8px;background:#002147;color:#fff;border:none;padding:9px 20px;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;">⬇ Download Your Excel File</button>
+      <span id="dlHint" style="font-size:.78rem;color:#6b7280;margin-left:10px;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PART 1 ═══ -->
+<div class="part-divider">
+  <div class="label">PART 1 — Statistical Analysis</div><hr>
+</div>
+<div class="info-box">ℹ️ Use Excel (Stats sheet) to answer Q1a, Q1b, and Q1c. All three must be correct to unlock Part 2.</div>
+
+<!-- Q1a -->
+<div class="card">
+  <h2><span class="badge">Q1a</span> Highest Mean-Return ETF</h2>
+  <p style="font-size:14px;color:#444;margin-bottom:12px">Look at row 5 (Mean μ) in the Stats sheet. Which ETF has the <strong>highest</strong> average monthly return? Enter its ticker symbol (e.g. <code>VGT</code>).</p>
+  <div class="step-row">
+    <div class="input-group">
+      <label>ETF Ticker with Highest Return</label>
+      <input class="num-input" id="q1a_input" type="text" placeholder="e.g. VGT" style="text-transform:uppercase" autocomplete="off" maxlength="3">
+    </div>
+    <div style="padding-top:20px"><button class="btn btn-primary" onclick="validateQ1a()">Verify ✓</button></div>
+  </div>
+  <div class="feedback" id="q1a_fb"></div>
+</div>
+
+<!-- Q1b -->
+<div class="card">
+  <h2><span class="badge">Q1b</span> Lowest-Risk ETF — Standard Deviation</h2>
+  <p style="font-size:14px;color:#444;margin-bottom:12px">Look at row 6 (Std Dev σ) in the Stats sheet. Find the ETF with the <strong>lowest</strong> standard deviation and enter its σ value (4 decimal places, e.g. <code>4.1012</code>).</p>
+  <div class="step-row">
+    <div class="input-group">
+      <label>Monthly Std Dev σ (%) of lowest-risk ETF</label>
+      <input class="num-input" id="q1b_input" type="text" placeholder="e.g. 4.1012" autocomplete="off">
+    </div>
+    <div style="padding-top:20px"><button class="btn btn-primary" onclick="validateQ1b()">Verify ✓</button></div>
+  </div>
+  <div class="feedback" id="q1b_fb"></div>
+</div>
+
+<!-- Q1c -->
+<div class="card">
+  <h2><span class="badge">Q1c</span> Correlation between Q1a and Q1b ETFs</h2>
+  <p style="font-size:14px;color:#444;margin-bottom:12px">In the Stats sheet, complete the CORREL formula (row 11) using the two column letters for the ETFs identified in Q1a and Q1b. Enter the resulting correlation value (e.g. <code>0.6375</code>).</p>
+  <div class="step-row">
+    <div class="input-group">
+      <label>Correlation ρ (Q1a ETF, Q1b ETF)</label>
+      <input class="num-input" id="q1c_input" type="text" placeholder="e.g. 0.6375" autocomplete="off">
+    </div>
+    <div style="padding-top:20px"><button class="btn btn-primary" onclick="validateQ1c()">Verify &amp; Unlock ↓</button></div>
+  </div>
+  <div class="feedback" id="q1c_fb"></div>
+</div>
+
+<!-- ═══ PART 2 (locked) ═══ -->
+<div class="part-divider">
+  <div class="label">PART 2 — Portfolio Optimization (Excel Solver)</div><hr>
+</div>
+
+<div id="part2Wrapper" class="section-locked">
+  <div class="lock-overlay" id="part2Lock">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-msg">Complete Q1a, Q1b, and Q1c correctly to unlock Part 2</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge">📊</span> Solver Setup Reminder</h2>
+    <p style="font-size:14px;color:#444;margin-bottom:10px">Open the <strong>Optimizer sheet</strong> in your Excel file. Follow the step-by-step instructions embedded at the bottom of that sheet for each portfolio below.</p>
+    <div class="info-box">ℹ️ The Optimizer sheet has pre-built formulas for Portfolio Return (B14), Risk (B15), and Sharpe Ratio (B16). The VarCov matrix is pre-computed. You only need to run Solver with the correct objective and constraints for each portfolio.</div>
+    <div class="note-box">⚠️ <strong>Portfolio C (Max Sharpe):</strong> This is a non-convex problem. You MUST enable Multistart in Solver Options (GRG Nonlinear → Use Multistart, Population = 100) to get the global optimum.</div>
+  </div>
+
+  <!-- Q2a: Target Return -->
+  <div class="card">
+    <h2><span class="badge">Q2a</span> Portfolio A — Target Return</h2>
+    <p style="font-size:14px;color:#444;margin-bottom:10px">
+      Run Solver to find the portfolio that achieves a target return equal to the mean monthly return of <strong id="q2a_target_etf_label">[leader ETF]</strong>.
+      After Solver completes, read the values from cells B14 and B15.
+    </p>
+    <div id="q2a_target_hint" class="note-box" style="margin-bottom:12px">
+      🎯 <span id="q2a_target_text">Target return = leader ETF mean return (shown on the minicase page once Part 1 is unlocked)</span>
+    </div>
+    <div class="port-results">
+      <div class="port-stat"><label>Portfolio Return Rp (%/month) — cell B14</label><input type="text" id="q2a_ret" class="num-input" placeholder="e.g. 0.4366"></div>
+      <div class="port-stat"><label>Portfolio Risk σp (%/month) — cell B15</label><input type="text" id="q2a_risk" class="num-input" placeholder="e.g. 3.8373"></div>
+    </div>
+    <button class="btn btn-primary" onclick="validateQ2a()">Verify ✓</button>
+    <div class="feedback" id="q2a_fb"></div>
+    <div id="q2a_chart"></div>
+  </div>
+
+  <!-- Q2b: MVP -->
+  <div class="card">
+    <h2><span class="badge">Q2b</span> Portfolio B — Minimum Variance Portfolio (MVP)</h2>
+    <p style="font-size:14px;color:#444;margin-bottom:10px">
+      Run Solver to <strong>minimize portfolio risk</strong> (Objective: Minimize B15). No return constraint — only the budget constraint (weights sum to 1) and the short-sale limits.
+    </p>
+    <div class="port-results">
+      <div class="port-stat"><label>Portfolio Return Rp (%/month) — cell B14</label><input type="text" id="q2b_ret" class="num-input" placeholder="e.g. 0.5173"></div>
+      <div class="port-stat"><label>Portfolio Risk σp (%/month) — cell B15</label><input type="text" id="q2b_risk" class="num-input" placeholder="e.g. 3.7939"></div>
+    </div>
+    <button class="btn btn-primary" onclick="validateQ2b()">Verify ✓</button>
+    <div class="feedback" id="q2b_fb"></div>
+    <div id="q2b_chart"></div>
+  </div>
+
+  <!-- Q2c: Max Sharpe -->
+  <div class="card">
+    <h2><span class="badge">Q2c</span> Portfolio C — Maximum Sharpe Ratio</h2>
+    <p style="font-size:14px;color:#444;margin-bottom:10px">
+      Run Solver to <strong>maximize the Sharpe Ratio</strong> (Objective: Maximize B16). Use Multistart. Enter the Sharpe Ratio from cell B16, plus the return and risk.
+    </p>
+    <div class="port-results">
+      <div class="port-stat"><label>Sharpe Ratio (monthly) — cell B16 ⭐</label><input type="text" id="q2c_sharpe" class="num-input" placeholder="e.g. 0.0698"></div>
+      <div class="port-stat"><label>Portfolio Return Rp (%/month) — cell B14</label><input type="text" id="q2c_ret" class="num-input" placeholder="e.g. 0.6647"></div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="port-stat" style="display:inline-block;width:48%"><label>Portfolio Risk σp (%/month) — cell B15</label><input type="text" id="q2c_risk" class="num-input" placeholder="e.g. 4.1514"></div>
+    </div>
+    <div style="margin-top:12px"><button class="btn btn-primary" onclick="validateQ2c()">Verify ✓</button></div>
+    <div class="feedback" id="q2c_fb"></div>
+    <div id="q2c_chart"></div>
+  </div>
+
+</div><!-- /part2Wrapper -->
+
+<!-- ═══ PART 3 (locked) ═══ -->
+<div class="part-divider">
+  <div class="label">PART 3 — Critical Analysis with Prof. Ceballos</div><hr>
+</div>
+
+<div id="part3Wrapper" class="section-locked">
+  <div class="lock-overlay" id="part3Lock">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-msg">Complete all three portfolios in Part 2 to unlock Part 3</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge">💬</span> Prof. Ceballos Devil's Advocate</h2>
+    <p style="font-size:14px;color:#444">Answer each question below. After you submit, Prof. Ceballos will challenge your reasoning — you must <strong>refute or convince him</strong>.</p>
+  </div>
+
+  <!-- Q3a -->
+  <div class="card">
+    <h2><span class="badge">Q3a</span> Return–Risk Tradeoff</h2>
+    <div class="q-item">
+      <p style="font-size:14px;color:#333;margin-bottom:8px"><strong>Question:</strong> Compare your three portfolios (A, B, C). Which one best balances return and risk for a moderate investor? Justify your choice using the specific numbers from your Solver results (return, risk, Sharpe ratio).</p>
+      <textarea class="q-area" id="q3a_student" placeholder="Enter your group's answer here (2–4 sentences minimum)…"></textarea>
+      <div style="margin-top:10px"><button class="btn btn-primary" onclick="runDevilsAdvocate('a')">Submit to Prof. Ceballos →</button></div>
+    </div>
+    <div id="q3a_da_panel" class="da-panel" style="display:none">
+      <h4>🎭 Prof. Ceballos — Devil's Advocate</h4>
+      <div class="da-bubble" id="q3a_da_bubble"></div>
+      <div class="da-response">
+        <p>Refute or convince Prof. Ceballos:</p>
+        <textarea class="q-area" id="q3a_response" placeholder="Defend your position or revise your answer based on the challenge…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3b -->
+  <div class="card">
+    <h2><span class="badge">Q3b</span> Short Positions &amp; Optimization Insights</h2>
+    <div class="q-item">
+      <p style="font-size:14px;color:#333;margin-bottom:8px"><strong>Question:</strong> The Minimum-Variance Portfolio allows short positions (weights below 0, down to −20%). Which ETF does your MVP short the most? Why do you think the optimizer chose to short it?</p>
+      <textarea class="q-area" id="q3b_student" placeholder="Enter your group's answer here…"></textarea>
+      <div style="margin-top:10px"><button class="btn btn-primary" onclick="runDevilsAdvocate('b')">Submit to Prof. Ceballos →</button></div>
+    </div>
+    <div id="q3b_da_panel" class="da-panel" style="display:none">
+      <h4>🎭 Prof. Ceballos — Devil's Advocate</h4>
+      <div class="da-bubble" id="q3b_da_bubble"></div>
+      <div class="da-response">
+        <p>Refute or convince Prof. Ceballos:</p>
+        <textarea class="q-area" id="q3b_response" placeholder="Defend your position or revise your answer based on the challenge…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3c -->
+  <div class="card">
+    <h2><span class="badge">Q3c</span> Sharpe Ratio &amp; Investment Decision</h2>
+    <div class="q-item">
+      <p style="font-size:14px;color:#333;margin-bottom:8px"><strong>Question:</strong> Portfolio C (Maximum Sharpe) offers the best risk-adjusted return of your three portfolios. Does that mean every rational investor should choose it? Explain what the Sharpe ratio actually measures.</p>
+      <textarea class="q-area" id="q3c_student" placeholder="Enter your group's answer here…"></textarea>
+      <div style="margin-top:10px"><button class="btn btn-primary" onclick="runDevilsAdvocate('c')">Submit to Prof. Ceballos →</button></div>
+    </div>
+    <div id="q3c_da_panel" class="da-panel" style="display:none">
+      <h4>🎭 Prof. Ceballos — Devil's Advocate</h4>
+      <div class="da-bubble" id="q3c_da_bubble"></div>
+      <div class="da-response">
+        <p>Refute or convince Prof. Ceballos:</p>
+        <textarea class="q-area" id="q3c_response" placeholder="Defend your position or revise your answer based on the challenge…"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /part3Wrapper -->
+
+<!-- ═══ SUBMIT ═══ -->
+<div class="card" style="margin-top:28px">
+  <h2><span class="badge">📤</span> Submit</h2>
+  <p style="font-size:14px;color:var(--muted);margin-bottom:16px">Make sure all team members' names are filled in above and all parts are complete before submitting. One submission per group.</p>
+  <div class="submit-section">
+    <button id="submitBtn" class="btn btn-primary" onclick="submitToFirebase()" style="padding:13px 40px;font-size:16px">📤 SUBMIT</button>
+    <p style="font-size:13px;color:var(--muted);margin-top:10px">This submission is final once saved.</p>
+  </div>
+  <div id="submitResult" style="margin-top:14px"></div>
+</div>
+
+</div><!-- /mc-body -->
+</main>
+
+<script>
+// Patch Q2a hint after page loads (waits for A to be set by resolveGroupAndStart)
+const _patchQ2aHint = setInterval(()=>{
+  if(!A) return;
+  clearInterval(_patchQ2aHint);
+  document.getElementById('q2a_target_etf_label').textContent = A.leader;
+  document.getElementById('q2a_target_text').textContent =
+    'Target return = '+A.leader+' mean monthly return = '+A.target_ret.toFixed(4)+'%/month. Add this as constraint: B14 = '+A.target_ret.toFixed(4);
+},200);
+</script>
+</body>
+</html>
