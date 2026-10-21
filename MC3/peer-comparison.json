@@ -1,0 +1,28 @@
+{
+  "asOf": "2026-10-16",
+  "units": "Raw inputs in USD millions",
+  "method": "Latest reported fiscal quarter available by the case date. Growth = revenue / same quarter prior year - 1; GAAP operating margin = operating income / revenue; cash-only net debt = current debt + long-term debt - cash and cash equivalents. Excludes all investments and operating lease liabilities.",
+  "companies": [
+    {
+      "company": "NVIDIA", "ticker": "NVDA", "period": "Q2 FY2027", "periodEnd": "2026-07-26", "published": "2026-08-26",
+      "revenue": 96221, "priorRevenue": 46743, "operatingIncome": 63734,
+      "currentDebt": 1000, "longTermDebt": 32366, "cash": 22443,
+      "scope": "AI accelerators, networking and computing platforms.",
+      "source": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-second-quarter-fiscal-2027"
+    },
+    {
+      "company": "AMD", "ticker": "AMD", "period": "Q2 2026", "periodEnd": "2026-06-27", "published": "2026-08-04",
+      "revenue": 11536, "priorRevenue": 7685, "operatingIncome": 1990,
+      "currentDebt": 875, "longTermDebt": 2351, "cash": 5086,
+      "scope": "Direct computing / accelerator peer; also client, gaming and embedded businesses. GAAP includes acquisition-related amortization.",
+      "source": "https://ir.amd.com/news-events/press-releases/detail/1295/amd-reports-second-quarter-2026-financial-results"
+    },
+    {
+      "company": "Broadcom", "ticker": "AVGO", "period": "Q3 FY2026", "periodEnd": "2026-08-02", "published": "2026-09-02",
+      "revenue": 29591, "priorRevenue": 15952, "operatingIncome": 15955,
+      "currentDebt": 2252, "longTermDebt": 57167, "cash": 23975,
+      "scope": "Broader AI infrastructure peer: custom accelerators and networking; infrastructure software is 30% of quarterly revenue. Consolidated figures include software.",
+      "source": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial"
+    }
+  ]
+}

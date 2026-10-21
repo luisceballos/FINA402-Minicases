@@ -128,6 +128,7 @@ canvas{width:100%;height:auto;display:block;border-radius:6px;cursor:not-allowed
     appId:"1:1058911893067:web:0ab85f8a600d4fb8d2ffce"
   });
 </script>
+<script src="minicase-team.js"></script>
 </head>
 <body>
 
@@ -159,7 +160,7 @@ canvas{width:100%;height:auto;display:block;border-radius:6px;cursor:not-allowed
     <li><strong>One submission per group</strong>. Coordinate before submitting.</li>
     <li>If someone in your group is <strong>not physically present</strong>, <strong>you</strong> will individually receive a grade of 0 — regardless of your group's submission. The rest of the group is not affected.</li>
     <li><strong>No AI tools</strong> or external materials not covered in class. Use only your class notes.</li>
-    <li>Complete all steps and submit through Canvas by the end of class.</li>
+    <li>Complete all steps and submit through this page by the end of class.</li>
   </ol>
   <div class="note-box" style="margin-top:14px">
     ⚠️ <span><strong>Each group has a different data window.</strong> Download your file above — it already contains only your group's rows.</span>
@@ -462,7 +463,7 @@ canvas{width:100%;height:auto;display:block;border-radius:6px;cursor:not-allowed
     <div class="card submit-section">
       <h2 style="justify-content:center"><span class="badge">📤</span> Submit</h2>
       <p style="font-size:14px;color:#444;margin-bottom:14px;text-align:center">
-        When your group has completed all questions, click below to save your submission directly to Canvas.
+        When your group has completed all questions, click below to save your submission to Firebase for your instructor.
       </p>
       <div id="alreadySubmittedBanner" style="display:none;margin-bottom:14px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;font-size:13px;color:#78350f;text-align:center">
         ⚠️ This group has already submitted. Resubmission is currently <strong>disabled</strong>.
@@ -623,13 +624,8 @@ document.getElementById('groupNum').textContent = gNum;
   if(_sec>0){const gb=document.getElementById('groupNum');if(gb&&gb.parentElement)gb.parentElement.innerHTML='Sec '+_sec+' &middot; Grp '+_grp;}
 document.getElementById('windowRange').textContent = G.start + ' to ' + G.end;
 document.getElementById('windowMonths').textContent = G.dates.length + ' months';
-// Team member inputs
-const tg = document.getElementById('teamGrid');
-for(let i=1;i<=5;i++){
-  const inp = document.createElement('input');
-  inp.className='team-input'; inp.placeholder='Student '+ i + ' name'; inp.id='tm'+i;
-  tg.appendChild(inp);
-}
+// Team member roster (shared across groups via Firestore transactions)
+MinicaseTeam.mount({db:firebase.firestore(),mc:1,sec:_sec,grp:_grp}).catch(MinicaseTeam.showError);
 
 // Spot check month
 checkIdx = 11;
@@ -1123,6 +1119,7 @@ function drawPortfolioChart(){
 // SUBMISSION
 // ═══════════════════════════════════════════════════
 async function submitToFirebase(){
+  try { MinicaseTeam.selection(); } catch(e) { alert(e.message); return; }
   if(_submitted && _resubmitBlocked){
     alert('This group has already submitted. Contact your professor to allow resubmission.');
     return;
@@ -1166,7 +1163,7 @@ async function submitToFirebase(){
   };
   try {
     const docId = `mc1_sec${_sec}_grp${_grp}`;
-    await firebase.firestore().collection('minicase_submissions').doc(docId).set(data);
+    await MinicaseTeam.submit(data);
     _submitted      = true;
     _resubmitBlocked = true;
     document.getElementById('submitResult').innerHTML = `

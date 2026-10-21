@@ -193,13 +193,7 @@ function showAlreadySubmitted(d){
 }
 
 function buildTeamGrid(){
-  const g = document.getElementById('teamGrid');
-  for(let i=1;i<=5;i++){
-    const inp = document.createElement('input');
-    inp.className='team-input'; inp.type='text'; inp.id='tm'+i;
-    inp.placeholder='Student '+i+' full name'; inp.autocomplete='off';
-    g.appendChild(inp);
-  }
+  MinicaseTeam.mount({db,mc:2,sec:_sec,grp:_grp}).catch(MinicaseTeam.showError);
 }
 
 function buildDataCard(){
@@ -484,6 +478,7 @@ Portfolio data for this group:
 // SUBMIT
 // ═══════════════════════════════════════════
 async function submitToFirebase(){
+  try { MinicaseTeam.selection(); } catch(e) { alert(e.message); return; }
   if(_submitted && _resubmitBlocked){ alert('This group has already submitted. Contact your professor to allow resubmission.'); return; }
   var btn = document.getElementById('submitBtn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving…';
@@ -519,7 +514,7 @@ async function submitToFirebase(){
   };
 
   try {
-    await db.collection('minicase_submissions').doc('mc2_sec'+_sec+'_grp'+_grp).set(data);
+    await MinicaseTeam.submit(data);
     _submitted=true; _resubmitBlocked=true;
     document.getElementById('submitResult').innerHTML=
       '<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;padding:20px;text-align:center;color:#065f46">'
@@ -541,6 +536,7 @@ if(document.readyState==='loading'){
   resolveGroupAndStart();
 }
 </script>
+<script src="minicase-team.js"></script>
 </head>
 <body>
 

@@ -148,6 +148,10 @@ input:checked+.tslider:before{transform:translateX(18px);}
 .sub-empty{color:var(--muted);font-size:.85rem;padding:20px;text-align:center;}
 @media(max-width:600px){header{padding:14px 16px;flex-wrap:wrap;}main{padding:20px 14px;}.banner{padding:12px 14px;}.modal{border-radius:0;max-height:100vh;}}
 </style>
+<script src="minicase-team.js"></script>
+<script src="mc3-model.js"></script>
+<script src="MC3/nvda-data.js"></script>
+<script defer src="minicase-admin.js"></script>
 </head>
 <body>
 
@@ -239,7 +243,7 @@ input:checked+.tslider:before{transform:translateX(18px);}
       </div>
       <div class="pw-change" style="margin-top:12px;">
         <h4>🤖 AI Agent — Anthropic API Key</h4>
-        <div style="font-size:.78rem;color:#6b7280;margin-bottom:8px;">This key is stored in Firebase and used by student minicases to power the AI feedback agent. Students never see the key.</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-bottom:8px;">This key is stored in Firebase and used by student minicases to power the AI feedback agent. The legacy browser integration uses this key; it is not a server-side secret.</div>
         <div class="pw-row">
           <input type="password" id="anthropic-key-input" placeholder="sk-ant-…" style="flex:1;font-family:monospace;">
           <button onclick="toggleAnthrKey()">👁</button>
@@ -247,6 +251,7 @@ input:checked+.tslider:before{transform:translateX(18px);}
         <div id="anthropic-key-msg" style="font-size:.8rem;margin-top:6px;display:none;"></div>
       </div>
       <div id="mc-settings"></div>
+<div id="roster-admin" class="sub-panel"></div>
 
       <!-- ── SUBMISSIONS VIEWER ── -->
       <div class="sub-panel">
@@ -423,6 +428,7 @@ document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='E
 
 // ── SETTINGS ──
 function openSettings(){
+  renderRosterAdmin();
   renderSettings();
   populateSubPickers();
   populateAkPickers();
@@ -510,7 +516,7 @@ async function saveSettings(){
       const actEl=document.getElementById('sec-active-'+i+'-'+si);
       sections.push({name:'Section '+(si+1),active:actEl?actEl.checked:true,groups:grpEl?parseInt(grpEl.value)||5:5});
     }
-    return{active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
+    return{...cfg.minicases[i],active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
   });
   cfg.minicases=minicases;
   // Save Anthropic key if provided
@@ -596,7 +602,11 @@ async function loadStatusForMC(mcIdx){
 
   // Fetch all in parallel
   const snaps = await Promise.all(expected.map(e=>db.collection('minicase_submissions').doc(e.id).get().catch(()=>null)));
-  const results = expected.map((e,i)=>({...e, submitted: snaps[i]&&snaps[i].exists, team:(snaps[i]&&snaps[i].exists&&snaps[i].data().team)||[]}));
+  const results = expected.map((e,i)=>{
+    const d=snaps[i]?.exists?snaps[i].data():null;
+    return {...e,submitted:!!d&&(d.submissionMode!=='group-confirmations'||d.complete),team:d?.team||[],
+      confirmations:d?.submissionMode==='group-confirmations'?`${d.confirmationCount}/${d.totalMembers} confirmed`:''};
+  });
 
   // Group by section
   const bySec = {};
@@ -622,7 +632,7 @@ async function loadStatusForMC(mcIdx){
         title="${r.submitted?'Submitted by: '+r.team.join(', '):'Not yet submitted'}"
         onclick="quickLoadSub(${mcIdx},${r.sec},${r.grp})">
         <strong>Grp ${r.grp}</strong>${names?' <span style=\'opacity:.65\'>'+names+'</span>':''}
-        ${r.submitted?'✅':'⬜'}
+        ${r.submitted?'✅':'⬜'} ${r.confirmations||''}
       </div>`;
     });
     html += '</div></div>';
@@ -722,6 +732,7 @@ async function loadSubmission(){
 }
 
 function renderSubmission(d, docId, mcNum, sec, grp){
+  if(mcNum===3){ renderSubmissionMC3(d,docId,sec,grp); return; }
   if(mcNum===2){ renderSubmissionMC2(d, docId, sec, grp); return; }
   const div = document.getElementById('sub-data');
   const team = Array.isArray(d.team)?d.team:[];
@@ -883,7 +894,7 @@ async function saveSubmissionEdits(docId){
   function gv(id){const el=document.getElementById('ef_'+id);return el?el.value.trim():'';}
   // team
   const team=[];for(let i=0;i<5;i++){const v=gv('team_'+i);if(v)team.push(v);}
-  d.team = team;
+  if(!d.teamIds) d.team = team;
   d.step1 = {returnVal: gv('step1_ret')};
   d.step2 = {mu_vgt:gv('s2_mu1'),s_vgt:gv('s2_s1'),mu_vht:gv('s2_mu2'),s_vht:gv('s2_s2')};
   d.step3 = {rho:gv('s3_rho')};
@@ -904,7 +915,9 @@ async function resetSubmission(docId){
   if(!confirm('Are you sure you want to CLEAR this submission? The group will be able to resubmit.')){return;}
   const msg = document.getElementById('sub-save-msg');
   try{
-    await db.collection('minicase_submissions').doc(docId).delete();
+    const match=docId.match(/^mc(\d+)_sec(\d+)_grp(\d+)$/);
+    if(!match) throw Error('Invalid submission ID.');
+    await MinicaseTeam.createService(db).reset(Number(match[1]),Number(match[2]),Number(match[3]));
     document.getElementById('sub-data').innerHTML='<div class="sub-empty" style="color:var(--green)">✓ Submission cleared. The group can now resubmit.</div>';
   }catch(e){
     msg.textContent='Error: '+e.message;msg.style.color='var(--red)';
@@ -966,6 +979,7 @@ function loadAnswerKey(){
     div.innerHTML='<div class="sub-empty">Please select a minicase and section.</div>'; return;
   }
   const mcIdx  = parseInt(mcIdxStr);
+  if(mcIdx===2){ renderMC3Guide(); return; }
   const secNum = parseInt(secStr); // 1-based
   const mc       = cfg.minicases[mcIdx];
   const secData  = (mc.sections||[])[secNum-1]||{};
@@ -1215,7 +1229,7 @@ async function saveMC2SubmissionEdits(docId){
   if(!d){return;}
   function gv(id){const el=document.getElementById('ef_'+id);return el?el.value.trim():'';}
   const team=[];for(let i=0;i<5;i++){const v=gv('team_'+i);if(v)team.push(v);}
-  d.team = team;
+  if(!d.teamIds) d.team = team;
   d.p1   = {q1a:gv('p1_q1a'),q1b:gv('p1_q1b'),q1c:gv('p1_q1c')};
   d.p2   = {q2a_ret:gv('p2_q2a_ret'),q2a_risk:gv('p2_q2a_risk'),q2b_ret:gv('p2_q2b_ret'),q2b_risk:gv('p2_q2b_risk'),q2c_sharpe:gv('p2_q2c_sharpe'),q2c_ret:gv('p2_q2c_ret'),q2c_risk:gv('p2_q2c_risk')};
   d.p3   = {q3a_student:gv('p3_q3a_stu'),q3a_response:(d.p3||{}).q3a_response||'',q3b_student:gv('p3_q3b_stu'),q3b_response:(d.p3||{}).q3b_response||'',q3c_student:gv('p3_q3c_stu'),q3c_response:(d.p3||{}).q3c_response||''};
