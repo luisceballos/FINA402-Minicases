@@ -311,7 +311,7 @@ async function loadHub(){
   try{
     const s=await HUB.get();
     if(s.exists){
-      cfg=s.data();
+      cfg=s.data();if(cfg.minicases?.[3]){cfg.minicases[3].individual=true;cfg.minicases[3].submissionMode='individual';}
       // migrate old format (groupsPerSection array → sections array)
       cfg.minicases.forEach(mc=>{
         if(!mc.sections||!Array.isArray(mc.sections)||typeof mc.sections[0]==='number'){
@@ -479,6 +479,7 @@ function renderSettings(){
 }
 
 function buildSectionRows(idx, secs){
+  const individual=idx===3||cfg.minicases[idx]?.individual;
   const cont=document.getElementById('secs-'+idx);
   cont.innerHTML='';
   secs.forEach((s,si)=>{
@@ -486,8 +487,7 @@ function buildSectionRows(idx, secs){
     r.className='sec-row';
     r.innerHTML=
       '<span class="sec-name">Section '+(si+1)+'</span>'+
-      '<input class="grp-input" type="number" id="grp-'+idx+'-'+si+'" value="'+(s.groups||5)+'" min="1" max="40">'+
-      '<span class="grp-label">groups</span>'+
+      (individual?'<span class="grp-label">Individual · one student per report</span>':'<input class="grp-input" type="number" id="grp-'+idx+'-'+si+'" value="'+(s.groups||5)+'" min="1" max="40"><span class="grp-label">groups</span>')+
       '<div class="tog-wrap"><span class="tlabel">Active</span><label class="toggle"><input type="checkbox" id="sec-active-'+idx+'-'+si+'" '+(s.active!==false?'checked':'')+' ><span class="tslider"></span></label></div>';
     cont.appendChild(r);
   });
@@ -514,9 +514,9 @@ async function saveSettings(){
     for(let si=0;si<nsec;si++){
       const grpEl=document.getElementById('grp-'+i+'-'+si);
       const actEl=document.getElementById('sec-active-'+i+'-'+si);
-      sections.push({name:'Section '+(si+1),active:actEl?actEl.checked:true,groups:grpEl?parseInt(grpEl.value)||5:5});
+      sections.push({name:'Section '+(si+1),active:actEl?actEl.checked:true,...(i===3||cfg.minicases[i].individual?{}:{groups:grpEl?parseInt(grpEl.value)||5:5})});
     }
-    return{...cfg.minicases[i],active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
+    return{...cfg.minicases[i],...(i===3?{individual:true,submissionMode:'individual'}:{}),active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
   });
   cfg.minicases=minicases;
   // Save Anthropic key if provided
@@ -587,7 +587,7 @@ async function loadStatusForMC(mcIdx){
   const mc = cfg.minicases[mcIdx];
   const secs = mc.sections||[];
   const mcNum = mcIdx+1;
-  const statusDiv = document.getElementById('mc-status-'+mcIdx);
+  const statusDiv = document.getElementById('mc-status-'+mcIdx);if(mcIdx===3||mc.individual){statusDiv.innerHTML='<p>Individual submissions: each student selects their section and confirms their own name.</p><p><a href="mc4-instructor.html" target="_blank" rel="noopener">Open individual submissions, grades and release/reset student names</a></p>';return;}
   statusDiv.innerHTML = '<span style="color:var(--muted);font-size:.8rem">⏳ Loading…</span>';
 
   // Build all expected doc IDs
@@ -678,7 +678,7 @@ function subMcChanged(){
   const grpSel = document.getElementById('sub-grp');
   secSel.innerHTML='<option value="">— Section —</option>';
   grpSel.innerHTML='<option value="">— Group —</option>';
-  grpSel.disabled=true;
+  grpSel.disabled=true;grpSel.hidden=Number(mcIdx)===3&&mcIdx!=='';
   if(mcIdx===''){secSel.disabled=true;return;}
   const mc = cfg.minicases[parseInt(mcIdx)];
   const secs = mc.sections||[];
@@ -699,7 +699,7 @@ function subSecChanged(){
   if(secVal===''){grpSel.disabled=true;return;}
   const mc = cfg.minicases[mcIdx];
   const secIdx = parseInt(secVal)-1;
-  const numGroups = (mc.sections[secIdx]||{}).groups||5;
+  if(mcIdx===3||mc.individual){grpSel.hidden=true;document.getElementById('sub-data').innerHTML='<p>MC4 is individual. <a href="mc4-instructor.html?section='+secVal+'" target="_blank" rel="noopener">View students, submissions and release names for this section</a>.</p>';return;}grpSel.hidden=false;const numGroups = (mc.sections[secIdx]||{}).groups||5;
   for(let g=1;g<=numGroups;g++){
     const opt=document.createElement('option');opt.value=g;opt.textContent='Group '+g;
     grpSel.appendChild(opt);
@@ -712,7 +712,7 @@ async function loadSubmission(){
   const sec   = document.getElementById('sub-sec').value;
   const grp   = document.getElementById('sub-grp').value;
   const div   = document.getElementById('sub-data');
-  if(mcIdx===''||sec===''||grp===''){
+  if(mcIdx==='3'){div.innerHTML='<p>MC4 is individual. <a href="mc4-instructor.html'+(sec?'?section='+sec:'')+'" target="_blank" rel="noopener">Open individual student reports and name management</a>.</p>';return;}if(mcIdx===''||sec===''||grp===''){
     div.innerHTML='<div class="sub-empty">Please select minicase, section, and group.</div>';
     return;
   }
@@ -979,7 +979,7 @@ function loadAnswerKey(){
     div.innerHTML='<div class="sub-empty">Please select a minicase and section.</div>'; return;
   }
   const mcIdx  = parseInt(mcIdxStr);
-  if(mcIdx===2){ renderMC3Guide(); return; }
+  if(mcIdx===2){ renderMC3Guide(); return; }if(mcIdx===3){document.getElementById('ak-data').innerHTML='<p>MC4 is individual and uses student-specific CCC variants. <a href="mc4-instructor.html" target="_blank" rel="noopener">Open individual reports and instructor review</a>.</p>';return;}
   const secNum = parseInt(secStr); // 1-based
   const mc       = cfg.minicases[mcIdx];
   const secData  = (mc.sections||[])[secNum-1]||{};

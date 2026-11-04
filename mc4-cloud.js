@@ -5,7 +5,7 @@ const firebaseConfig={apiKey:'AIzaSyAjHL3MztreUN7J7QKW3q_nRbiNoxLwA0E',authDomai
 if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore(),configRef=db.doc('minicase_hub/config'),packetRef=db.doc('minicase_data/mc4_fixed_income_v1');
 const clone=v=>JSON.parse(JSON.stringify(v)),same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-let config,packet,instructor=false,testRun=null,identity=null,revision=0,sessionRef,submissionRef;
+let config,packet,instructor=false,testRun=null,identity=null,revision=0,sessionRef,submissionRef,claimToken=null;
 function access(c,section){const mc=c?.minicases?.[3];if(!mc?.active||!mc.sections?.[section-1]?.active)throw Error('Minicase 4 is not open for this section. Return to the course hub.');}
 function scope(){return instructor?db.collection('minicase4_instructor_tests').doc(testRun):null;}
 function checkImmutable(old,next){
@@ -68,15 +68,19 @@ async function roster(section){
 async function open(who){
  const id=who.id.replace(/[^a-zA-Z0-9_-]/g,'_'),docId='mc4_sec'+who.section+'_'+id;
  identity=clone(who);identity.variantIndex=Number(who.variantIndex);
+ const tokenKey='mc4-claim-'+(instructor?testRun:'course')+'-'+docId;
+ claimToken=localStorage.getItem(tokenKey);if(!claimToken){claimToken=crypto.randomUUID();localStorage.setItem(tokenKey,claimToken);}
  if(!Number.isSafeInteger(identity.variantIndex))throw Error('Invalid case variant.');
  sessionRef=instructor?scope().collection('sessions').doc(docId):db.doc('minicase4_sessions/'+docId);
  submissionRef=instructor?scope().collection('submissions').doc(docId):db.doc('minicase4_submissions/'+docId);
  return db.runTransaction(async tx=>{
   const [cfg,session,sub]=await Promise.all([tx.get(configRef),tx.get(sessionRef),tx.get(submissionRef)]);
   if(!instructor){access(cfg.data(),who.section);const r=await tx.get(db.doc('minicase_rosters/2026-fall_sec'+who.section));const found=r.data()?.students.find(s=>s.id===who.id);if(!found)throw Error('Student is not on this roster.');identity.name=found.name;const assigned=packet.sections[String(who.section)]?.students.find(s=>s.id===who.id);if(assigned?.variantIndex!==identity.variantIndex)throw Error('Individual variant mismatch.');}
+  if(session.exists&&session.data().claimToken&&session.data().claimToken!==claimToken)throw Error('This name is already in use in another browser. Ask your instructor to release your name if someone else selected it.');
+  if(session.exists&&!session.data().claimToken)tx.update(sessionRef,{claimToken});
   if(sub.exists){revision=session.data()?.revision||0;return {identity,report:sub.data(),submitted:true,revision,variantIndex:identity.variantIndex};}
   if(session.exists){const d=session.data();revision=d.revision;return {identity,report:d.report||null,submitted:false,revision,variantIndex:identity.variantIndex};}
-  revision=0;tx.set(sessionRef,{identity,caseVersion:packet.version,revision:0,status:'draft',createdAt:new Date().toISOString(),testOnly:instructor});
+  revision=0;tx.set(sessionRef,{identity,claimToken,caseVersion:packet.version,revision:0,status:'draft',createdAt:new Date().toISOString(),testOnly:instructor});
   return {identity,report:null,submitted:false,revision:0,variantIndex:identity.variantIndex};
  });
 }
@@ -86,7 +90,7 @@ async function save(report){
   const [cfg,s,sub]=await Promise.all([tx.get(configRef),tx.get(sessionRef),tx.get(submissionRef)]);
   if(!instructor)access(cfg.data(),identity.section);
   if(sub.exists||s.data()?.status==='submitted')throw Error('This individual report has already been submitted.');
-  const old=s.data();if(!old||old.revision!==expected)throw Error('This report changed in another tab or device. Reload to continue with the saved version.');
+  const old=s.data();if(!old||old.claimToken!==claimToken)throw Error('Your name was released or opened elsewhere. Contact your instructor before continuing.');if(old.revision!==expected)throw Error('This report changed in another tab or device. Reload to continue with the saved version.');
   checkImmutable(old.report,report);
   tx.set(sessionRef,{...old,report:clone(report),revision:expected+1,updatedAt:new Date().toISOString()});return expected+1;
  });revision=next;return {revision};
@@ -97,7 +101,7 @@ async function submit(report){
   const [cfg,s,sub]=await Promise.all([tx.get(configRef),tx.get(sessionRef),tx.get(submissionRef)]);
   if(!instructor)access(cfg.data(),identity.section);
   if(sub.exists)throw Error('This student has already submitted.');
-  const old=s.data();if(old?.revision!==expected)throw Error('Report changed. Reload before submitting.');checkImmutable(old.report,report);
+  const old=s.data();if(!old||old.claimToken!==claimToken)throw Error('Your name was released or opened elsewhere. Contact your instructor.');if(old.revision!==expected)throw Error('Report changed. Reload before submitting.');checkImmutable(old.report,report);
   const final={...clone(report),minicase:4,section:identity.section,studentId:identity.id,studentName:identity.name,submissionMode:'individual',testOnly:instructor,caseVersion:packet.version,submittedAt:new Date().toISOString()};
   tx.set(submissionRef,final);tx.set(sessionRef,{...old,report:final,status:'submitted',revision:expected+1,updatedAt:final.submittedAt});return final;
  });
@@ -107,11 +111,17 @@ async function question(context,fallback){
  try{const endpoint=agentEndpoint();if(!endpoint)return {question:fallback,source:'guided-fallback',reason:'secure-agent-not-configured'};const res=await fetch(endpoint,{method:'POST',signal:AbortSignal.timeout(8000),headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'question',identity:{section:identity.section,id:identity.id,variantIndex:identity.variantIndex},context,requiredQuestion:fallback})});if(!res.ok)throw Error('Agent unavailable');const data=await res.json();if(typeof data.question!=='string'||!data.question.trim()||data.question.length>1600)throw Error('Invalid agent response');return {question:data.question.trim(),source:'ai'};}catch{return {question:fallback,source:'guided-fallback',reason:'agent-unavailable'};}
 }
 async function submissions(section){if(!instructor)throw Error('Instructor login required.');const q=await db.collection('minicase4_submissions').where('section','==',section).get();return q.docs.map(d=>({id:d.id,...d.data()}));}
+async function studentSessions(section){if(!instructor)throw Error('Instructor login required.');const [roster,sessions,finals]=await Promise.all([db.doc('minicase_rosters/2026-fall_sec'+section).get(),db.collection('minicase4_sessions').where('identity.section','==',section).get(),db.collection('minicase4_submissions').where('section','==',section).get()]);const started=new Map(sessions.docs.map(d=>[d.data().identity.id,d.data()])),submitted=new Set(finals.docs.map(d=>d.data().studentId));return (roster.data()?.students||[]).map(s=>({...s,status:submitted.has(s.id)?'Submitted':started.has(s.id)?'In progress / name reserved':'Available',claimed:started.has(s.id)||submitted.has(s.id)}));}
+async function releaseStudent(section,studentId,reason,testOnly=false){
+ if(!instructor)throw Error('Instructor login required.');if(!reason||reason.trim().length<3)throw Error('Enter a brief reason for releasing the student.');
+ const docId='mc4_sec'+section+'_'+studentId.replace(/[^a-zA-Z0-9_-]/g,'_'),session=testOnly?scope().collection('sessions').doc(docId):db.doc('minicase4_sessions/'+docId),final=testOnly?scope().collection('submissions').doc(docId):db.doc('minicase4_submissions/'+docId),archive=(testOnly?scope().collection('archives'):db.collection('minicase4_archives')).doc();
+ return db.runTransaction(async tx=>{const [s,f]=await Promise.all([tx.get(session),tx.get(final)]);if(!s.exists&&!f.exists)throw Error('This student is already available.');tx.set(archive,{section,studentId,reason:reason.trim(),releasedAt:new Date().toISOString(),session:s.data()||null,submission:f.data()||null,testOnly});tx.delete(session);tx.delete(final);return {archiveId:archive.id};});
+}
 async function review(id,grade,feedback,criteria){if(!instructor)throw Error('Instructor login required.');if(!Number.isFinite(grade)||grade<0||grade>10||!Number.isInteger(grade*2))throw Error('Use grades from 0 to 10 in 0.5 steps.');await db.doc('minicase4_submissions/'+id).update({review:{grade,feedback:String(feedback).slice(0,4000),criteria:criteria||null,reviewedAt:new Date().toISOString()}});}
 async function assess(report){
  if(!instructor)throw Error('Instructor login required.');const endpoint=agentEndpoint();if(!endpoint)throw Error('Secure AI evaluation is not configured. Review and grade manually.');
  const res=await fetch(endpoint,{method:'POST',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'assessment',report})});if(!res.ok)throw Error('AI service unavailable; review manually.');let result;try{result=await res.json();}catch{throw Error('AI evaluation could not be validated; review manually.');}
  for(const [k,max] of [['clientA',3.5],['clientB',3.5],['final',1]])if(!result[k]||!Number.isFinite(result[k].score)||result[k].score<0||result[k].score>max||!Number.isInteger(result[k].score*2))throw Error('AI score validation failed; review manually.');return result;
 }
-root.MC4Cloud={boot,login,roster,open,save,submit,question,submissions,review,assess,isInstructor:()=>instructor,getTestRun:()=>testRun};
+root.MC4Cloud={boot,login,roster,open,save,submit,question,submissions,studentSessions,releaseStudent,review,assess,isInstructor:()=>instructor,getTestRun:()=>testRun};
 })(window);
