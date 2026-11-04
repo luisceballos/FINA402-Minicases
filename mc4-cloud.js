@@ -115,12 +115,14 @@ async function studentSessions(section){if(!instructor)throw Error('Instructor l
 async function watchSection(section,onChange,onError,testOnly=false){
  if(!instructor)throw Error('Instructor login required.');let rosterData=null,sessions=null,finals=null;const fresh={roster:false,sessions:false,finals:false},unsubs=[];let timer=null,stopped=false;
  const emit=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(stopped||!rosterData||!sessions||!finals)return;const students=MC4Status.combine(rosterData,sessions,finals);onChange({students,submissions:finals,summary:MC4Status.summarize(students),live:Object.values(fresh).every(Boolean),updatedAt:new Date().toISOString()});},100);};
- if(testOnly){rosterData=await roster(section);fresh.roster=true;}else unsubs.push(db.doc('minicase_rosters/2026-fall_sec'+section).onSnapshot({includeMetadataChanges:true},snap=>{rosterData=snap.data()?.students||[];fresh.roster=!snap.metadata.fromCache;emit();},onError));
+ if(testOnly){const fixture=await scope().collection('rosters').doc('sec'+section).get({source:'server'});rosterData=fixture.exists?fixture.data().students:await roster(section);fresh.roster=true;}else unsubs.push(db.doc('minicase_rosters/2026-fall_sec'+section).onSnapshot({includeMetadataChanges:true},snap=>{rosterData=snap.data()?.students||[];fresh.roster=!snap.metadata.fromCache;emit();},onError));
  const sessionCollection=testOnly?scope().collection('sessions'):db.collection('minicase4_sessions'),finalCollection=testOnly?scope().collection('submissions'):db.collection('minicase4_submissions');
  unsubs.push(sessionCollection.where('identity.section','==',section).onSnapshot({includeMetadataChanges:true},snap=>{sessions=snap.docs.map(d=>d.data());fresh.sessions=!snap.metadata.fromCache;emit();},onError));
  unsubs.push(finalCollection.where('section','==',section).onSnapshot({includeMetadataChanges:true},snap=>{finals=snap.docs.map(d=>({id:d.id,...d.data()}));fresh.finals=!snap.metadata.fromCache;emit();},onError));
  return ()=>{stopped=true;clearTimeout(timer);unsubs.forEach(stop=>stop());};
 }
+async function startDemoRun(){if(!instructor)throw Error('Instructor login required.');testRun='mc4_demo30_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);await scope().set({testOnly:true,demo:true,section:1,expectedSubmissions:30,createdAt:new Date().toISOString(),caseVersion:packet.version});return {testRun};}
+async function selectDemo(run){if(!instructor)throw Error('Instructor login required.');if(!/^mc4_demo30_\d+_[a-z0-9]+$/.test(run))throw Error('Invalid demonstration identifier.');const ref=db.collection('minicase4_instructor_tests').doc(run),doc=await ref.get();if(!doc.exists||!doc.data().testOnly||!doc.data().demo)throw Error('Synthetic demonstration not found.');testRun=run;return doc.data();}
 async function releaseStudent(section,studentId,reason,testOnly=false){
  if(!instructor)throw Error('Instructor login required.');if(!reason||reason.trim().length<3)throw Error('Enter a brief reason for releasing the student.');
  const docId='mc4_sec'+section+'_'+studentId.replace(/[^a-zA-Z0-9_-]/g,'_'),session=testOnly?scope().collection('sessions').doc(docId):db.doc('minicase4_sessions/'+docId),final=testOnly?scope().collection('submissions').doc(docId):db.doc('minicase4_submissions/'+docId),archive=(testOnly?scope().collection('archives'):db.collection('minicase4_archives')).doc();
@@ -132,5 +134,5 @@ async function assess(report){
  const res=await fetch(endpoint,{method:'POST',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'assessment',report})});if(!res.ok)throw Error('AI service unavailable; review manually.');let result;try{result=await res.json();}catch{throw Error('AI evaluation could not be validated; review manually.');}
  for(const [k,max] of [['clientA',3.5],['clientB',3.5],['final',1]])if(!result[k]||!Number.isFinite(result[k].score)||result[k].score<0||result[k].score>max||!Number.isInteger(result[k].score*2))throw Error('AI score validation failed; review manually.');return result;
 }
-root.MC4Cloud={boot,login,roster,open,save,submit,question,submissions,studentSessions,watchSection,releaseStudent,review,assess,isInstructor:()=>instructor,getTestRun:()=>testRun};
+root.MC4Cloud={boot,login,roster,open,save,submit,question,submissions,studentSessions,watchSection,startDemoRun,selectDemo,releaseStudent,review,assess,isInstructor:()=>instructor,getTestRun:()=>testRun};
 })(window);
