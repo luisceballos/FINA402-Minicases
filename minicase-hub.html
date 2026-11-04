@@ -166,7 +166,7 @@ input:checked+.tslider:before{transform:translateX(18px);}
 
 <div class="banner">
   <span class="banner-icon">⚠️</span>
-  <p><strong>Attendance required.</strong> If you are not physically present in class when your group submits this minicase, <strong>you will individually receive a grade of 0</strong> — regardless of your group's submission. Your group's grade is not affected.</p>
+  <p><strong>Attendance required.</strong> You must be physically present in class to receive credit. MC1–MC3 use group submissions; MC4 requires an individual submission from each student.</p>
 </div>
 
 <main>
@@ -192,7 +192,7 @@ input:checked+.tslider:before{transform:translateX(18px);}
       <select class="gs-select" id="gs-section" onchange="updateGroupDropdown()">
         <option value="">— Choose your section —</option>
       </select>
-      <label class="gs-label">Group</label>
+      <label class="gs-label" id="gs-group-label">Group</label>
       <select class="gs-select" id="gs-group" disabled>
         <option value="">— Choose your section first —</option>
       </select>
@@ -346,8 +346,8 @@ function renderGrid(){
     card.innerHTML=
       '<div class="card-hd"><span class="num">Minicase '+n+'</span><span class="pill '+(active?'open':'closed')+'">'+(active?'Open':'Not Available')+'</span></div>'+
       '<div class="card-bd"><div class="title">'+(mc.title||'Minicase '+n)+'</div>'+(mc.description?'<div class="desc">'+mc.description+'</div>':'')+'</div>'+
-      '<div class="card-ft"><span class="groups-info">'+(active&&activeSecs.length?activeSecs.length+' section'+(activeSecs.length>1?'s':'')+' · '+totalGroups+' groups':'')+'</span>'+
-      (active?'<button class="open-btn">Select Group →</button>':'<span class="soon">Coming soon</span>')+'</div>';
+      '<div class="card-ft"><span class="groups-info">'+(active&&activeSecs.length?activeSecs.length+' section'+(activeSecs.length>1?'s':'')+(mc.individual?' · Individual':' · '+totalGroups+' groups'):'')+'</span>'+
+      (active?'<button class="open-btn">'+(mc.individual?'Select Section →':'Select Group →')+'</button>':'<span class="soon">Coming soon</span>')+'</div>';
     grid.appendChild(card);
   });
 }
@@ -356,7 +356,7 @@ function renderGrid(){
 function openGS(idx){
   currentMC=idx;
   const mc=cfg.minicases[idx];
-  document.getElementById('gs-title').textContent=(mc.title||'Minicase '+(idx+1))+' — Select Your Group';
+  document.getElementById('gs-title').textContent=(mc.title||'Minicase '+(idx+1))+(mc.individual?' — Select Your Section':' — Select Your Group');document.getElementById('gs-group').hidden=!!mc.individual;document.getElementById('gs-group-label').hidden=!!mc.individual;
   // populate sections
   const secSel=document.getElementById('gs-section');
   secSel.innerHTML='<option value="">— Choose your section —</option>';
@@ -383,7 +383,7 @@ function updateGroupDropdown(){
   const info=document.getElementById('gs-info');
   if(secIdx===''){grpSel.innerHTML='<option value="">— Choose your section first —</option>';grpSel.disabled=true;goBtn.disabled=true;info.style.display='none';return;}
   const mc=cfg.minicases[currentMC];
-  const sec=mc.sections[parseInt(secIdx)];
+  if(mc.individual){goBtn.disabled=false;info.textContent='Individual activity: select your own name inside the minicase.';info.style.display='block';return;}const sec=mc.sections[parseInt(secIdx)];
   const numGroups=sec.groups||5;
   grpSel.innerHTML='<option value="">— Choose your group —</option>';
   for(let g=1;g<=numGroups;g++){
@@ -404,7 +404,7 @@ function updateGroupDropdown(){
 function goToMinicase(){
   const si=document.getElementById('gs-section').value;
   const gi=document.getElementById('gs-group').value;
-  if(!si||!gi)return;
+  if(si==='')return;if(cfg.minicases[currentMC].individual){window.location.href='minicase'+(currentMC+1)+'.html?seccion='+(parseInt(si)+1);return;}if(!gi)return;
   window.location.href='minicase'+(currentMC+1)+'.html?seccion='+(parseInt(si)+1)+'&grupo='+gi;
 }
 

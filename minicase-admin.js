@@ -4,6 +4,7 @@ function renderRosterAdmin() {
   const host=document.getElementById('roster-admin');
   host.innerHTML='<h4>👥 Student rosters & team reservations</h4><p style="font-size:.8rem">Names are reserved per minicase and section. Clear a group to release its names and remove its draft/submission. Names on submitted roster-based reports cannot be edited as free text.</p>'+
     '<p><a href="minicase3.html?instructor=1" target="_blank" rel="noopener">Test NVIDIA Minicase 3 as instructor — choose section / virtual TEST group</a></p>'+
+    '<p><a href="minicase4.html?instructor=1" target="_blank" rel="noopener">Test MC4 — isolated individual Firebase records</a> · <a href="mc4-instructor.html" target="_blank" rel="noopener">MC4 individual submissions, grading and simulation ranking</a></p>'+
     '<div class="sub-picker"><select id="roster-mc"><option value="1">Minicase 1</option><option value="2">Minicase 2</option><option value="3" selected>Minicase 3</option></select>'+
     '<select id="roster-sec">'+[1,2,3,4].map(n=>'<option value="'+n+'">Section '+n+'</option>').join('')+'</select>'+
     '<button onclick="loadRosterAssignments()">Load teams</button></div><div id="roster-assignments"></div>';
