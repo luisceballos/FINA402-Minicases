@@ -152,7 +152,7 @@ input:checked+.tslider:before{transform:translateX(18px);}
 <script src="mc3-model.js"></script>
 <script src="MC3/nvda-data.js"></script>
 <script defer src="minicase-admin.js"></script>
-</head>
+<script defer src="minicase-access.js?v=20261104-access"></script></head>
 <body>
 
 <header>
@@ -196,7 +196,7 @@ input:checked+.tslider:before{transform:translateX(18px);}
       <select class="gs-select" id="gs-group" disabled>
         <option value="">— Choose your section first —</option>
       </select>
-      <div class="gs-info" id="gs-info"></div>
+      <label class="gs-label" for="gs-password">Minicase password</label><input class="gs-select" id="gs-password" type="password" autocomplete="off" placeholder="Password provided by your instructor"><p id="gs-password-error" role="status" style="color:#b91c1c"></p><div class="gs-info" id="gs-info"></div>
     </div>
     <div class="mfoot">
       <button class="btn-secondary" onclick="closeGS()">Cancel</button>
@@ -354,7 +354,7 @@ function renderGrid(){
 
 // ── GROUP SELECTOR ──
 function openGS(idx){
-  currentMC=idx;
+  currentMC=idx;document.getElementById('gs-password').value='';document.getElementById('gs-password-error').textContent='';
   const mc=cfg.minicases[idx];
   document.getElementById('gs-title').textContent=(mc.title||'Minicase '+(idx+1))+(mc.individual?' — Select Your Section':' — Select Your Group');document.getElementById('gs-group').hidden=!!mc.individual;document.getElementById('gs-group-label').hidden=!!mc.individual;
   // populate sections
@@ -401,11 +401,10 @@ function updateGroupDropdown(){
   };
 }
 
-function goToMinicase(){
-  const si=document.getElementById('gs-section').value;
-  const gi=document.getElementById('gs-group').value;
-  if(si==='')return;if(cfg.minicases[currentMC].individual){window.location.href='minicase'+(currentMC+1)+'.html?seccion='+(parseInt(si)+1);return;}if(!gi)return;
-  window.location.href='minicase'+(currentMC+1)+'.html?seccion='+(parseInt(si)+1)+'&grupo='+gi;
+async function goToMinicase(){
+ const si=document.getElementById('gs-section').value,gi=document.getElementById('gs-group').value;if(si==='')return;const mc=cfg.minicases[currentMC];if(!mc.individual&&!gi)return;
+ const button=document.getElementById('gs-go');button.disabled=true;
+ try{await MinicaseAccess.grant(currentMC+1,Number(si)+1,document.getElementById('gs-password').value,mc.accessPasswordHash);document.getElementById('gs-password').value='';window.location.href='minicase'+(currentMC+1)+'.html?seccion='+(Number(si)+1)+(mc.individual?'':'&grupo='+gi);}catch(e){document.getElementById('gs-password-error').textContent=e.message;button.disabled=false;}
 }
 
 function closeGS(){document.getElementById('gs-overlay').classList.remove('show');currentMC=null;}
@@ -463,6 +462,7 @@ function renderSettings(){
       '<div class="acc-body" id="body-'+i+'">'+
         '<div class="frow"><label>Title</label><input type="text" id="mc-title-'+i+'" value="'+(mc.title||'Minicase '+(i+1))+'" oninput="refreshPreview('+i+')" placeholder="e.g. Portfolio Diversification"></div>'+
         '<div class="frow"><label>Description (optional)</label><input type="text" id="mc-desc-'+i+'" value="'+(mc.description||'')+'" placeholder="Short description shown on card"></div>'+
+        '<div class="frow"><label>Minicase access password</label><input type="password" autocomplete="new-password" id="mc-password-'+i+'" placeholder="Set a new class password; leave blank to keep current"><span style="font-size:.8rem">'+(mc.accessPasswordHash?'Password configured':'Password required before opening')+'. Students enter this password in addition to selecting a section.</span></div>'+
         '<div class="frow"><label style="margin-bottom:6px;">Submission Status</label>'+
           '<button onclick="loadStatusForMC('+i+')" style="padding:5px 12px;background:var(--navy);color:#fff;border:none;border-radius:5px;font-size:.78rem;cursor:pointer;margin-bottom:8px;">📊 Load Status</button>'+
           '<div id="mc-status-'+i+'"><span style="color:var(--muted);font-size:.8rem">Click to load who has submitted.</span></div>'+
@@ -508,7 +508,7 @@ function refreshPreview(idx){
 }
 
 async function saveSettings(){
-  const minicases=cfg.minicases.map((_,i)=>{
+  const minicases=await Promise.all(cfg.minicases.map(async(_,i)=>{
     const nsec=parseInt(document.getElementById('mc-nsec-'+i).value)||4;
     const sections=[];
     for(let si=0;si<nsec;si++){
@@ -516,8 +516,8 @@ async function saveSettings(){
       const actEl=document.getElementById('sec-active-'+i+'-'+si);
       sections.push({name:'Section '+(si+1),active:actEl?actEl.checked:true,...(i===3||cfg.minicases[i].individual?{}:{groups:grpEl?parseInt(grpEl.value)||5:5})});
     }
-    return{...cfg.minicases[i],...(i===3?{individual:true,submissionMode:'individual'}:{}),active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
-  });
+    const newCasePassword=document.getElementById('mc-password-'+i).value;const accessPasswordHash=newCasePassword?await MinicaseAccess.hash(newCasePassword):cfg.minicases[i].accessPasswordHash;return{...cfg.minicases[i],accessPasswordHash,...(i===3?{individual:true,submissionMode:'individual'}:{}),active:document.getElementById('mc-active-'+i).checked,title:document.getElementById('mc-title-'+i).value.trim()||'Minicase '+(i+1),description:document.getElementById('mc-desc-'+i).value.trim(),sections};
+  }));
   cfg.minicases=minicases;
   // Save Anthropic key if provided
   const keyEl=document.getElementById('anthropic-key-input');

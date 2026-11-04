@@ -1,0 +1,6 @@
+(function(root){
+'use strict';
+function combine(roster,sessions,submissions){const active=new Map(sessions.map(s=>[s.identity.id,s])),done=new Map(submissions.map(s=>[s.studentId,s]));return roster.map(student=>{const session=active.get(student.id),final=done.get(student.id),started=!!session||!!final;return {...student,statusCode:final?'submitted':started?'in-progress':'not-opened',status:final?'Submitted':started?'In progress':'Not opened',claimed:started,openedAt:session?.createdAt||null,lastSavedAt:session?.updatedAt||final?.submittedAt||null,portfolioConfirmed:!!session?.report?.portfolioConfirmed||!!final?.portfolioConfirmed,clientAComplete:(session?.report?.conversations?.A?.length||final?.conversations?.A?.length||0)===3};});}
+function summarize(students){const submitted=students.filter(s=>s.statusCode==='submitted').length,inProgress=students.filter(s=>s.statusCode==='in-progress').length,notOpened=students.filter(s=>s.statusCode==='not-opened').length,started=submitted+inProgress;return {total:students.length,started,submitted,inProgress,notOpened,clientAComplete:students.filter(s=>s.clientAComplete).length,canSimulate:started>0&&inProgress===0&&submitted>0};}
+const api={combine,summarize};root.MC4Status=api;if(typeof module!=='undefined')module.exports=api;
+})(typeof window==='undefined'?globalThis:window);
