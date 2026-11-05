@@ -31,9 +31,10 @@ function verifyReport(r,complete=false){
   if(!['cash','market','spy'].includes(r.couponReinvestmentPolicy)||r.bondQuantities.some((n,i)=>!Number.isSafeInteger(n)||n<0||Math.abs(n*MC4.bonds[i].quote-r.allocation[i])>.01)||Math.abs(r.cashReserve-r.allocation[6])>.01)throw Error('Invalid bond quantities or cash reserve.');
  }
  if(complete){
+  const short=[3,4].includes(Number(identity.section))&&r.activityFormat==='short-v1',roundCount=short?2:3;
   if(!r.portfolioConfirmed||!r.confirmedPortfolio)throw Error('Confirm your portfolio.');
-  for(const c of ['A','B'])if(r.conversations[c].length!==3||r.conversations[c].some(t=>t.answer.trim().length<50))throw Error('Complete all six client replies.');
-  if(r.answers.finalRecommendation.trim().length<50)throw Error('Complete your final recommendation.');
+  for(const c of ['A','B'])if(r.conversations[c].length!==roundCount||r.conversations[c].some(t=>t.answer.trim().length<(short?1:50)))throw Error('Complete all '+(roundCount*2)+' client replies.');
+  if(!short&&r.answers.finalRecommendation.trim().length<50)throw Error('Complete your final recommendation.');
   const packet=MC4Case.variant(identity.variantIndex);
   const close=(raw,value,tolerance)=>raw!==''&&raw!==null&&Number.isFinite(Number(raw))&&Math.abs(Number(raw)-value)<=tolerance;
   for(const b of MC4.bonds)if(!close(r.answers['price'+b.id],b.quote,.05))throw Error('Check Treasury prices.');
