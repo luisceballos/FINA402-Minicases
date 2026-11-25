@@ -34,7 +34,7 @@
     if(!doc.exists)throw Error('Section roster unavailable.');
     return doc.data().students;
   }
-  async function open(who){
+  async function open(who,resumeExisting=false){
     const people=await roster(who.section),found=people.find(person=>person.id===who.id);
     if(!found)throw Error('Choose a student on this section roster.');
     identity={id:found.id,name:found.name,section:who.section};
@@ -47,10 +47,19 @@
     return db.runTransaction(async tx=>{
       const [cfg,session,final]=await Promise.all([tx.get(configRef),tx.get(sessionRef),tx.get(finalRef)]);
       if(!teacher)access(cfg.data(),who.section);
-      if(session.exists&&session.data().claimToken!==claimToken)throw Error('This name is already open in another browser. Ask your instructor to release it.');
       revision=session.data()?.revision||0;
       if(final.exists)return {identity,report:final.data(),submitted:true};
-      if(session.exists)return {identity,report:session.data().report||null,submitted:false};
+      if(session.exists){
+        const saved=session.data();
+        if(saved.claimToken!==claimToken){
+          if(!resumeExisting)return {identity,resumeRequired:true,lastSavedAt:saved.updatedAt||saved.createdAt};
+          // Transfer the active writer while preserving the complete saved report.
+          // Advancing the revision also rejects writes from older tabs sharing a token.
+          revision+=1;
+          tx.update(sessionRef,{claimToken,revision,lastResumedAt:new Date().toISOString()});
+        }
+        return {identity,report:saved.report||null,submitted:false};
+      }
       tx.set(sessionRef,{identity,claimToken,revision:0,status:'draft',createdAt:new Date().toISOString(),testOnly:teacher});
       return {identity,report:null,submitted:false};
     });
@@ -64,7 +73,7 @@
       if(!teacher)access(cfg.data(),identity.section);
       if(final.exists)throw Error('This student has already submitted. Reload to view the receipt.');
       const old=session.data();
-      if(!old||old.claimToken!==claimToken)throw Error('Your name was released. Contact your instructor.');
+      if(!old||old.claimToken!==claimToken)throw Error('This draft is now active in another window. Reload MC5, confirm your own name and resume your saved draft.');
       if(old.revision!==expected)throw Error('This draft changed in another tab. Reload before continuing.');
       const saved={...clone(report),identity:clone(identity),minicase:5,section:identity.section,studentId:identity.id,studentName:identity.name,submissionMode:'individual',testOnly:teacher};
       if(complete){saved.submittedAt=new Date().toISOString();saved.finishedAt=saved.submittedAt;tx.set(finalRef,saved);}

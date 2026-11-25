@@ -56,7 +56,7 @@ function snapshot() {
 }
 function showSaveError(error) {
   byId('save-error').hidden = false;
-  byId('save-error').textContent = 'Firebase connection problem: ' + error.message + ' Keep this page open and retry Submit when connected.';
+  byId('save-error').textContent = /another window|another tab/.test(error.message) ? error.message : 'Firebase connection problem: ' + error.message + ' Keep this page open and retry Submit when connected.';
 }
 function backup() {
   if (identity) { try { localStorage.setItem(storageKey, JSON.stringify(snapshot())); } catch {} }
@@ -150,7 +150,18 @@ byId('start').onclick = async () => {
   if (!cloudReady || !byId('student').value || !byId('confirm-name').checked) return;
   byId('start').disabled = true;
   try {
-    const opened = await MC5Cloud.open({section:Number(byId('section').value),id:byId('student').value});
+    const selected = {section:Number(byId('section').value),id:byId('student').value};
+    let opened = await MC5Cloud.open(selected);
+    if (opened.resumeRequired) {
+      const savedTime = opened.lastSavedAt ? new Date(opened.lastSavedAt).toLocaleString() : 'an earlier session';
+      const proceed = confirm('Resume my saved draft for ' + opened.identity.name + '? Your answers saved at ' + savedTime + ' will be restored. This window will become the active session. Any earlier window will need to reload before saving again.');
+      if (!proceed) {
+        byId('identity-status').textContent = 'Your saved draft is available. Confirm your identity and select Start / resume when you are ready.';
+        byId('start').disabled = false;
+        return;
+      }
+      opened = await MC5Cloud.open(selected, true);
+    }
     identity = opened.identity;
     storageKey = 'fina402-mc5-firebase-backup-' + identity.section + '-' + identity.id;
     restoreReport(opened.report);
